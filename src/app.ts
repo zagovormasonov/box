@@ -452,7 +452,11 @@ export class TestApp {
   }
 
   private nextQuestion(): void {
+    console.log('=== nextQuestion вызвана ===')
+    console.log('Текущий индекс вопроса ДО:', this.state.currentQuestionIndex)
+
     const selectedAnswer = this.state.userAnswers[this.state.currentQuestionIndex]
+    console.log('selectedAnswer:', selectedAnswer)
 
     // Проверяем, что вопрос отвечен
     if (selectedAnswer === undefined) {
@@ -461,24 +465,29 @@ export class TestApp {
     }
 
     if (this.state.currentQuestionIndex < this.questions.length - 1) {
+      console.log('Переходим к следующему вопросу')
       // Обновляем индекс вопроса
       this.state.currentQuestionIndex++
       this.saveState()
+      console.log('Текущий индекс вопроса ПОСЛЕ:', this.state.currentQuestionIndex)
 
       // Рендерим интерфейс
       this.render()
-      console.log('Интерфейс перерендерен в nextQuestion, вызываем updateProgress')
+      console.log('Интерфейс перерендерен в nextQuestion')
 
       // Проверяем элемент после рендера
       setTimeout(() => {
+        console.log('Проверяем элемент после рендера')
         const progressFill = this.appElement.querySelector('#progress-fill') as HTMLElement
         console.log('Элемент #progress-fill найден после рендера:', !!progressFill)
         if (progressFill) {
           console.log('Ширина после рендера:', getComputedStyle(progressFill).width)
         }
+        console.log('Вызываем updateProgress')
         this.updateProgress()
       }, 50)
     } else {
+      console.log('Показываем результаты')
       this.showResults()
     }
   }
@@ -1123,11 +1132,23 @@ export class TestApp {
 
       progressFill.style.width = `${progressPercent}%`
       console.log('Ширина установлена:', progressFill.style.width)
+      console.log('Значение progressPercent:', progressPercent)
 
-      // Проверяем computed style
+      // Немедленная проверка
+      console.log('Немедленный computed width:', getComputedStyle(progressFill).width)
+      console.log('Немедленный offsetWidth:', progressFill.offsetWidth)
+
+      // Проверяем computed style через короткий таймаут
       setTimeout(() => {
-        console.log('Computed width:', getComputedStyle(progressFill).width)
+        console.log('Computed width через 100ms:', getComputedStyle(progressFill).width)
+        console.log('OffsetWidth через 100ms:', progressFill.offsetWidth)
       }, 100)
+
+      // Проверяем computed style через более длинный таймаут
+      setTimeout(() => {
+        console.log('Computed width через 300ms:', getComputedStyle(progressFill).width)
+        console.log('OffsetWidth через 300ms:', progressFill.offsetWidth)
+      }, 300)
     } else {
       console.error('Элемент #progress-fill не найден!')
       // Показываем все элементы с классом progress-fill
