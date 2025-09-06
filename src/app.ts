@@ -268,6 +268,7 @@ export class TestApp {
           <div class="dashboard-actions">
             <button id="view-results-btn" class="btn secondary-btn">Посмотреть результаты</button>
             <button id="theme-toggle-btn" class="btn secondary-btn">${this.darkMode ? '☀️ Светлая тема' : '🌙 Темная тема'}</button>
+            <button id="subscribe-btn" class="btn primary-btn">💎 Оформить подписку - 200₽</button>
             <button id="logout-btn" class="btn logout-btn">Выйти</button>
           </div>
         </div>
@@ -361,6 +362,8 @@ export class TestApp {
         this.viewResults()
       } else if (target.id === 'theme-toggle-btn') {
         this.toggleTheme()
+      } else if (target.id === 'subscribe-btn') {
+        this.showSubscriptionModal()
       } else if (target.id === 'back-to-dashboard-btn') {
         if (this.state.currentUser) {
           // Авторизованный пользователь - в личный кабинет
@@ -518,6 +521,78 @@ export class TestApp {
 
     this.state.currentScreen = 'dashboard'
     this.render()
+  }
+
+  private showSubscriptionModal(): void {
+    const modal = document.createElement('div')
+    modal.className = 'subscription-modal-overlay'
+    modal.innerHTML = `
+      <div class="subscription-modal">
+        <div class="modal-header">
+          <h3>💎 Premium подписка</h3>
+          <button class="modal-close" id="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="subscription-info">
+            <div class="price-tag">200₽</div>
+            <h4>Получите доступ к расширенным возможностям!</h4>
+            <ul class="features-list">
+              <li>✅ Детальный анализ результатов теста</li>
+              <li>✅ Сохранение истории прохождений</li>
+              <li>✅ Персональные рекомендации</li>
+              <li>✅ Премиум поддержка</li>
+            </ul>
+          </div>
+          <div class="payment-methods">
+            <button class="payment-btn sbp-btn" id="pay-sbp">
+              <div class="payment-icon">💳</div>
+              <span>Оплатить через СБП</span>
+            </button>
+            <button class="payment-btn card-btn" id="pay-card">
+              <div class="payment-icon">💳</div>
+              <span>Банковской картой</span>
+            </button>
+          </div>
+          <p class="payment-note">Безопасная оплата через проверенные сервисы</p>
+        </div>
+      </div>
+    `
+
+    document.body.appendChild(modal)
+
+    // Обработчики событий
+    const closeBtn = modal.querySelector('#modal-close') as HTMLElement
+    const sbpBtn = modal.querySelector('#pay-sbp') as HTMLElement
+    const cardBtn = modal.querySelector('#pay-card') as HTMLElement
+
+    closeBtn.addEventListener('click', () => this.closeSubscriptionModal(modal))
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) this.closeSubscriptionModal(modal)
+    })
+
+    sbpBtn.addEventListener('click', () => this.processPayment('sbp'))
+    cardBtn.addEventListener('click', () => this.processPayment('card'))
+  }
+
+  private closeSubscriptionModal(modal: HTMLElement): void {
+    modal.remove()
+  }
+
+  private processPayment(method: string): void {
+    // Здесь будет интеграция с платежным сервисом
+    console.log(`Начинаем оплату через ${method}`)
+
+    // Временная заглушка
+    alert(`Оплата через ${method === 'sbp' ? 'СБП' : 'банковскую карту'} будет доступна после подключения платежного сервиса.
+
+Для подключения оплаты нужно:
+1. Выбрать платежный сервис (ЮKassa, Robokassa, Tinkoff Оплата и т.д.)
+2. Зарегистрироваться в сервисе
+3. Получить API ключи
+4. Настроить callback URLs
+5. Добавить код интеграции в приложение
+
+Хотите, чтобы я помог с интеграцией конкретного сервиса?`)
   }
 
 
