@@ -109,7 +109,7 @@ export class TestApp {
           <!-- Шкала прогресса -->
           <div class="progress-section">
             <div class="progress-bar-container">
-              <div class="progress-bar" data-progress="0"></div>
+              <div class="progress-bar"></div>
             </div>
             <div class="step-counter">
               Добро пожаловать!
@@ -137,7 +137,7 @@ export class TestApp {
           <!-- Шкала прогресса -->
           <div class="progress-section">
             <div class="progress-bar-container">
-              <div class="progress-bar" data-progress="0"></div>
+              <div class="progress-bar"></div>
             </div>
             <div class="step-counter">
               Шаг ${currentStep} из ${totalSteps}
@@ -225,7 +225,7 @@ export class TestApp {
           <!-- Шкала прогресса -->
           <div class="progress-section">
             <div class="progress-bar-container">
-              <div class="progress-bar" data-progress="0"></div>
+              <div class="progress-bar"></div>
             </div>
             <div class="step-counter">
               Шаг ${answeredQuestions} из ${totalQuestions}
@@ -597,24 +597,9 @@ export class TestApp {
       const totalSteps = this.questions.length
       const progressPercent = (currentStep / totalSteps) * 100
 
-      console.log('Обновление прогресс-бара:', progressPercent + '%')
-      console.log('Элемент найден:', !!progressBar)
-      console.log('Текущий класс:', progressBar.className)
-
       // Принудительно устанавливаем ширину
       progressBar.style.width = `${progressPercent}%`
       progressBar.style.transition = 'width 0.8s ease'
-      
-      console.log('Ширина установлена в:', progressPercent + '%')
-      console.log('style.width:', progressBar.style.width)
-      
-      // Проверяем через небольшую задержку
-      setTimeout(() => {
-        console.log('getComputedStyle width:', getComputedStyle(progressBar).width)
-      }, 50)
-    } else {
-      console.log('Прогресс-бар не найден!')
-      console.log('Все элементы с классом progress-bar:', this.appElement.querySelectorAll('.progress-bar'))
     }
   }
 }

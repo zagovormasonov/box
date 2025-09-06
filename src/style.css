@@ -514,11 +514,6 @@ header h1 {
   position: relative;
 }
 
-.progress-bar[data-progress="20"] { width: 20%; }
-.progress-bar[data-progress="40"] { width: 40%; }
-.progress-bar[data-progress="60"] { width: 60%; }
-.progress-bar[data-progress="80"] { width: 80%; }
-.progress-bar[data-progress="100"] { width: 100%; }
 
 .step-counter {
   text-align: center;
