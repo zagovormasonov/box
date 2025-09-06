@@ -81,7 +81,6 @@ header h1 {
 
 .welcome-content {
   text-align: center;
-  position: relative;
 }
 
 .welcome-content h2 {
@@ -158,7 +157,6 @@ header h1 {
   display: flex;
   flex-direction: column;
   gap: 2rem;
-  position: relative;
 }
 
 #question-text {
@@ -386,7 +384,6 @@ header h1 {
 
 .results-content {
   text-align: center;
-  position: relative;
 }
 
 .results-content h2 {
@@ -641,14 +638,14 @@ header h1 {
   gap: 0.5rem;
   margin-top: 1rem;
   padding: 0.75rem 1.25rem;
-  background: linear-gradient(135deg, #6b7280, #4b5563);
+  background: linear-gradient(135deg, #10b981, #059669);
   border-radius: 8px;
   color: white;
   font-weight: 600;
 }
 
 .dark-mode .balance-info {
-  background: linear-gradient(135deg, #4b5563, #374151);
+  background: linear-gradient(135deg, #059669, #047857);
 }
 
 .balance-label {
@@ -659,32 +656,6 @@ header h1 {
 .balance-amount {
   font-size: 1.2rem;
   font-weight: bold;
-}
-
-/* Header с кнопкой входа на welcome screen */
-.auth-header {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  z-index: 10;
-}
-
-.small-btn {
-  padding: 8px 16px;
-  font-size: 0.9rem;
-  font-weight: 500;
-}
-
-/* Кнопка назад на auth screen */
-#auth-screen .back-btn {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  z-index: 10;
-}
-
-#auth-screen .auth-content {
-  padding-top: 60px; /* Отступ для кнопки назад */
 }
 
 .user-info p {

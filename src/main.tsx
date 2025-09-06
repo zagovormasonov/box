@@ -1,14 +1,39 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import App from './App';
-import './style.css';
+import './style.css'
+import { createSupabaseClient } from './supabase'
+import { TestApp } from './app'
+import type { TestQuestion } from './types'
 
-const root = ReactDOM.createRoot(
-  document.getElementById('app') as HTMLElement
-);
+// Данные психологического теста
+const testQuestions: TestQuestion[] = [
+  {
+    question: "Как вы обычно реагируете на стрессовые ситуации?",
+    answers: ["Анализирую проблему и ищу решение", "Делюсь переживаниями с близкими", "Занимаюсь спортом или хобби", "Избегаю думать об этом"]
+  },
+  {
+    question: "Что для вас значит успех?",
+    answers: ["Достижение поставленных целей", "Гармония в личной жизни", "Признание окружающих", "Внутреннее удовлетворение"]
+  },
+  {
+    question: "Как вы принимаете важные решения?",
+    answers: ["Взвешиваю все за и против рационально", "Доверяю интуиции", "Советуюсь с близкими", "Действую импульсивно"]
+  },
+  {
+    question: "Что вас мотивирует больше всего?",
+    answers: ["Желание развиваться и расти", "Забота о близких", "Финансовая стабильность", "Творческое самовыражение"]
+  },
+  {
+    question: "Как вы относитесь к изменениям?",
+    answers: ["Вижу в них возможности для роста", "Предпочитаю стабильность", "Адаптируюсь постепенно", "Люблю перемены"]
+  }
+];
 
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+// Инициализация Supabase
+const supabase = createSupabaseClient()
+
+// Создание приложения
+const app = new TestApp(testQuestions, supabase)
+
+// Запуск приложения с обработкой асинхронной инициализации
+app.init().catch((error) => {
+  console.error('Error initializing app:', error)
+})
