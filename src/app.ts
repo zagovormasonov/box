@@ -1139,13 +1139,58 @@ export class TestApp {
       if (container) {
         container.style.width = '400px'
         container.style.minWidth = '200px'
+        container.style.display = 'block'
+        container.style.visibility = 'visible'
+        container.style.overflow = 'visible'
+        container.style.position = 'relative'
       }
+
+      // Принудительно устанавливаем свойства для progress-fill
+      progressFill.style.display = 'block'
+      progressFill.style.visibility = 'visible'
+      progressFill.style.position = 'absolute'
+      progressFill.style.left = '0'
+      progressFill.style.top = '0'
+      progressFill.style.height = '100%'
       console.log('Ширина установлена:', progressFill.style.width)
       console.log('Значение progressPercent:', progressPercent)
 
-      // Немедленная проверка
-      console.log('Немедленный computed width:', getComputedStyle(progressFill).width)
-      console.log('Немедленный offsetWidth:', progressFill.offsetWidth)
+      // Детальная проверка всех свойств
+      const computedStyle = getComputedStyle(progressFill)
+      console.log('Детальная проверка CSS свойств:', {
+        width: computedStyle.width,
+        height: computedStyle.height,
+        display: computedStyle.display,
+        visibility: computedStyle.visibility,
+        position: computedStyle.position,
+        left: computedStyle.left,
+        top: computedStyle.top,
+        opacity: computedStyle.opacity,
+        zIndex: computedStyle.zIndex
+      })
+
+      console.log('Размеры элемента:', {
+        offsetWidth: progressFill.offsetWidth,
+        offsetHeight: progressFill.offsetHeight,
+        clientWidth: progressFill.clientWidth,
+        clientHeight: progressFill.clientHeight,
+        scrollWidth: progressFill.scrollWidth,
+        scrollHeight: progressFill.scrollHeight
+      })
+
+      // Проверяем родительские элементы
+      let parent = progressFill.parentElement
+      let depth = 0
+      while (parent && depth < 5) {
+        console.log(`Родитель ${depth}: ${parent.tagName}.${parent.className || ''}`, {
+          display: getComputedStyle(parent).display,
+          visibility: getComputedStyle(parent).visibility,
+          width: getComputedStyle(parent).width,
+          height: getComputedStyle(parent).height
+        })
+        parent = parent.parentElement
+        depth++
+      }
 
       // Проверяем computed style через короткий таймаут
       setTimeout(() => {
