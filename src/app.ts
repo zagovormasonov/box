@@ -421,6 +421,12 @@ export class TestApp {
     // Ждем немного, чтобы DOM обновился, затем инициализируем прогресс-бар
     setTimeout(() => {
       console.log('startTest: инициализируем прогресс-бар')
+      const progressBar = this.appElement.querySelector('.progress-bar') as HTMLElement
+      if (progressBar) {
+        // Устанавливаем начальную ширину явно
+        progressBar.style.width = '10%' // 1 из 10 вопросов = 10%
+        console.log('startTest: начальная ширина установлена на 10%')
+      }
       this.updateProgressBar()
     }, 100)
   }
@@ -1166,7 +1172,18 @@ export class TestApp {
   private updateProgressBar(): void {
     console.log('updateProgressBar вызвана')
     const progressBar = this.appElement.querySelector('.progress-bar') as HTMLElement
+    const progressContainer = this.appElement.querySelector('.progress-bar-container') as HTMLElement
     console.log('Элемент progress-bar найден:', !!progressBar)
+    console.log('Элемент progress-bar-container найден:', !!progressContainer)
+
+    if (progressContainer) {
+      console.log('Размеры контейнера:', {
+        width: progressContainer.offsetWidth,
+        height: progressContainer.offsetHeight,
+        display: getComputedStyle(progressContainer).display,
+        visibility: getComputedStyle(progressContainer).visibility
+      })
+    }
 
     if (progressBar) {
       const currentStep = this.state.currentQuestionIndex + 1
@@ -1179,6 +1196,8 @@ export class TestApp {
       requestAnimationFrame(() => {
         progressBar.style.width = `${progressPercent}%`
         console.log('Ширина прогресс-бара установлена:', `${progressPercent}%`)
+        console.log('Текущая ширина элемента:', progressBar.style.width)
+        console.log('Вычисленный offsetWidth:', progressBar.offsetWidth)
       })
     } else {
       console.error('Элемент .progress-bar не найден!')
