@@ -657,10 +657,13 @@ export class TestApp {
       console.log('Инициируем платёж через Тинькофф:', paymentData)
 
       // Подготовка данных для Тинькофф API
+      // Генерируем короткий OrderId (макс 50 символов)
+      const shortOrderId = `ord_${Date.now().toString().slice(-8)}_${Math.random().toString(36).substr(2, 4)}`
+
       const tinkoffPaymentData: any = {
         TerminalKey: TINKOFF_CONFIG.terminalKey,
         Amount: paymentData.amount,
-        OrderId: `order_${Date.now()}_${paymentData.customerKey}`,
+        OrderId: shortOrderId,
         Description: paymentData.description,
         CustomerKey: paymentData.customerKey,
         Email: paymentData.email,
