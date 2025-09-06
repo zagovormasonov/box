@@ -409,19 +409,39 @@ export class TestApp {
   }
 
   private startTest(): void {
+    console.log('startTest: начинаем тест')
     this.state.currentQuestionIndex = 0
     this.state.userAnswers = []
     this.state.currentScreen = 'test'
     this.saveState()
     this.render()
-    // Синхронное обновление прогресса после рендера
-    requestAnimationFrame(() => this.updateProgressBar())
+
+    // Ждем немного, чтобы DOM обновился, затем инициализируем прогресс-бар
+    setTimeout(() => {
+      console.log('startTest: инициализируем прогресс-бар')
+      this.updateProgressBar()
+    }, 100)
   }
 
   private selectAnswer(answerIndex: number): void {
+    console.log(`Выбран ответ ${answerIndex} для вопроса ${this.state.currentQuestionIndex}`)
     this.state.userAnswers[this.state.currentQuestionIndex] = answerIndex
     this.saveState()
-    this.render()
+    // Обновляем только необходимые элементы, без полного рендера
+    this.updateSelectedAnswerDisplay()
+  }
+
+  private updateSelectedAnswerDisplay(): void {
+    // Обновляем визуальное состояние выбранного ответа
+    const answerOptions = this.appElement.querySelectorAll('.answer-option')
+    answerOptions.forEach((option, index) => {
+      const element = option as HTMLElement
+      if (index === this.state.userAnswers[this.state.currentQuestionIndex]) {
+        element.classList.add('selected')
+      } else {
+        element.classList.remove('selected')
+      }
+    })
   }
 
   private nextQuestion(): void {
@@ -1120,22 +1140,34 @@ export class TestApp {
   }
 
   private updateProgressBar(): void {
+    console.log('updateProgressBar вызвана')
     const progressBar = this.appElement.querySelector('.progress-bar') as HTMLElement
+    console.log('Элемент progress-bar найден:', !!progressBar)
+
     if (progressBar) {
       const currentStep = this.state.currentQuestionIndex + 1
       const totalSteps = this.questions.length
       const progressPercent = (currentStep / totalSteps) * 100
 
+      console.log(`Прогресс: шаг ${currentStep}/${totalSteps} = ${progressPercent}%`)
+
       // Используем requestAnimationFrame для синхронизации с браузерным рендерингом
       requestAnimationFrame(() => {
         progressBar.style.width = `${progressPercent}%`
+        console.log('Ширина прогресс-бара установлена:', `${progressPercent}%`)
       })
+    } else {
+      console.error('Элемент .progress-bar не найден!')
     }
   }
 
   private animateProgressBar(fromPercent: number, toPercent: number, duration: number = 600): void {
+    console.log(`animateProgressBar: ${fromPercent}% -> ${toPercent}%`)
     const progressBar = this.appElement.querySelector('.progress-bar') as HTMLElement
-    if (!progressBar) return
+    if (!progressBar) {
+      console.error('Элемент progress-bar не найден для анимации!')
+      return
+    }
 
     const startTime = performance.now()
     const difference = toPercent - fromPercent
@@ -1152,6 +1184,8 @@ export class TestApp {
 
       if (progress < 1) {
         requestAnimationFrame(animate)
+      } else {
+        console.log('Анимация прогресс-бара завершена')
       }
     }
 
