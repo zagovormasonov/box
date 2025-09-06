@@ -1198,6 +1198,10 @@ export class TestApp {
         console.log('Ширина прогресс-бара установлена:', `${progressPercent}%`)
         console.log('Текущая ширина элемента:', progressBar.style.width)
         console.log('Вычисленный offsetWidth:', progressBar.offsetWidth)
+        console.log('Computed style width:', getComputedStyle(progressBar).width)
+        console.log('Computed style display:', getComputedStyle(progressBar).display)
+        console.log('Computed style visibility:', getComputedStyle(progressBar).visibility)
+        console.log('Computed style opacity:', getComputedStyle(progressBar).opacity)
       })
     } else {
       console.error('Элемент .progress-bar не найден!')
@@ -1227,10 +1231,15 @@ export class TestApp {
       progressBar.style.width = `${currentPercent}%`
       console.log(`Анимация: ${currentPercent.toFixed(1)}% (прогресс: ${(progress * 100).toFixed(1)}%)`)
 
+      // Проверяем, что стили действительно применяются
+      const computedWidth = getComputedStyle(progressBar).width
+      console.log('Computed width during animation:', computedWidth)
+
       if (progress < 1) {
         requestAnimationFrame(animate)
       } else {
         console.log('Анимация прогресс-бара завершена')
+        console.log('Финальная computed width:', getComputedStyle(progressBar).width)
       }
     }
 
