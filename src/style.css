@@ -471,6 +471,18 @@ header h1 {
 /* Шкала прогресса */
 .progress-section {
   margin-bottom: 2rem;
+  animation: slideInProgress 0.6s ease;
+}
+
+@keyframes slideInProgress {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .progress-bar-container {
@@ -487,11 +499,16 @@ header h1 {
   background-color: #374151;
 }
 
+.dark-mode .progress-bar {
+  background: linear-gradient(90deg, #60a5fa 0%, #93c5fd 100%);
+}
+
 .progress-bar {
   height: 100%;
-  background-color: #3b82f6;
+  background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%);
   border-radius: 4px;
-  transition: width 0.3s ease;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: left;
 }
 
 .step-counter {
@@ -499,7 +516,19 @@ header h1 {
   color: #6b7280;
   font-size: 0.9rem;
   font-weight: 500;
-  transition: color 0.2s ease;
+  transition: all 0.3s ease;
+  animation: fadeInUp 0.4s ease;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .dark-mode .step-counter {
