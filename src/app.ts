@@ -37,6 +37,9 @@ export class TestApp {
     // Ждем восстановления сессии
     await this.checkAuthState()
 
+    // Обрабатываем возврат от оплаты
+    await this.handlePaymentReturn()
+
     // Затем рендерим интерфейс и настраиваем обработчики
     this.render()
     this.setupEventListeners()
@@ -268,13 +271,13 @@ export class TestApp {
             <p>Email: ${this.state.currentUser?.email || ''}</p>
             <div class="balance-info">
               <span class="balance-label">Баланс:</span>
-              <span class="balance-amount">${this.getUserBalance()}₽</span>
+              <span class="balance-amount" id="user-balance">Загрузка...</span>
             </div>
           </div>
           <div class="dashboard-actions">
             <button id="view-results-btn" class="btn secondary-btn">Посмотреть результаты</button>
             <button id="theme-toggle-btn" class="btn secondary-btn">${this.darkMode ? '☀️ Светлая тема' : '🌙 Темная тема'}</button>
-            <button id="subscribe-btn" class="btn primary-btn">💎 Оформить подписку - 200₽</button>
+            <button id="subscribe-btn" class="btn primary-btn">💎 Оформить подписку</button>
             <button id="logout-btn" class="btn logout-btn">Выйти</button>
           </div>
         </div>
@@ -550,6 +553,34 @@ export class TestApp {
 
     this.state.currentScreen = 'dashboard'
     this.render()
+
+    // Загружаем баланс после рендера
+    setTimeout(() => this.updateBalanceDisplay(), 100)
+  }
+
+  private async handlePaymentReturn(): Promise<void> {
+    const urlParams = new URLSearchParams(window.location.search)
+    const paymentStatus = urlParams.get('payment')
+
+    if (paymentStatus === 'success' && this.state.currentUser) {
+      // Оплата прошла успешно - начисляем баланс
+      const amount = parseInt(urlParams.get('amount') || '0') / 100
+      const months = parseInt(localStorage.getItem('pending_subscription_months') || '1')
+
+      if (amount > 0) {
+        await this.saveUserBalance(this.state.currentUser.id, amount, months)
+
+        // Очищаем pending данные
+        localStorage.removeItem('pending_subscription_months')
+
+        // Показываем уведомление об успешной оплате
+        setTimeout(() => {
+          alert(`✅ Оплата прошла успешно!\n\nНа ваш счет зачислено: ${amount}₽\nПодписка активна на ${months} месяц${months > 1 ? 'ев' : ''}`)
+        }, 1000)
+      }
+    } else if (paymentStatus === 'fail') {
+      alert('❌ Оплата не была завершена')
+    }
   }
 
   private showSubscriptionModal(): void {
@@ -563,8 +594,23 @@ export class TestApp {
         </div>
         <div class="modal-body">
           <div class="subscription-info">
-            <div class="price-tag">200₽</div>
-            <h4>Получите доступ к расширенным возможностям!</h4>
+            <h4>Выберите период подписки:</h4>
+            <div class="subscription-periods">
+              <div class="period-option" data-months="1">
+                <div class="period-name">1 месяц</div>
+                <div class="period-price">200₽</div>
+                <div class="period-description">Базовая подписка</div>
+              </div>
+              <div class="period-option" data-months="2">
+                <div class="period-name">2 месяца</div>
+                <div class="period-price">
+                  <span class="original-price">400₽</span>
+                  <span class="discount-price">320₽</span>
+                  <span class="discount-badge">Скидка 20%</span>
+                </div>
+                <div class="period-description">Экономия 80₽</div>
+              </div>
+            </div>
             <ul class="features-list">
               <li>✅ Детальный анализ результатов теста</li>
               <li>✅ Сохранение истории прохождений</li>
@@ -573,12 +619,12 @@ export class TestApp {
             </ul>
           </div>
           <div class="payment-methods">
-            <button class="payment-btn sbp-btn" id="pay-sbp">
+            <button class="payment-btn sbp-btn" id="pay-sbp" disabled>
               <div class="payment-icon">📱</div>
               <span>Оплатить через СБП</span>
               <small>QR-код в приложении банка</small>
             </button>
-            <button class="payment-btn card-btn" id="pay-card">
+            <button class="payment-btn card-btn" id="pay-card" disabled>
               <div class="payment-icon">💳</div>
               <span>Банковской картой</span>
               <small>Visa, Mastercard, Мир</small>
@@ -595,41 +641,156 @@ export class TestApp {
     const closeBtn = modal.querySelector('#modal-close') as HTMLElement
     const sbpBtn = modal.querySelector('#pay-sbp') as HTMLElement
     const cardBtn = modal.querySelector('#pay-card') as HTMLElement
+    const periodOptions = modal.querySelectorAll('.period-option') as NodeListOf<HTMLElement>
 
     closeBtn.addEventListener('click', () => this.closeSubscriptionModal(modal))
     modal.addEventListener('click', (e) => {
       if (e.target === modal) this.closeSubscriptionModal(modal)
     })
 
-    sbpBtn.addEventListener('click', () => this.processPayment('sbp'))
-    cardBtn.addEventListener('click', () => this.processPayment('card'))
+    // Обработчик выбора периода подписки
+    let selectedMonths = 1
+    periodOptions.forEach(option => {
+      option.addEventListener('click', () => {
+        // Убираем активный класс у всех опций
+        periodOptions.forEach(opt => opt.classList.remove('active'))
+        // Добавляем активный класс выбранной опции
+        option.classList.add('active')
+        selectedMonths = parseInt(option.dataset.months || '1')
+
+        // Включаем кнопки оплаты
+        sbpBtn.removeAttribute('disabled')
+        cardBtn.removeAttribute('disabled')
+        sbpBtn.style.opacity = '1'
+        cardBtn.style.opacity = '1'
+      })
+    })
+
+    sbpBtn.addEventListener('click', () => this.processPayment('sbp', selectedMonths))
+    cardBtn.addEventListener('click', () => this.processPayment('card', selectedMonths))
   }
 
   private closeSubscriptionModal(modal: HTMLElement): void {
     modal.remove()
   }
 
-  private processPayment(method: string): void {
+  private processPayment(method: string, months: number = 1): void {
     // Интеграция с Тинькофф Оплатой
-    console.log(`Начинаем оплату через ${method}`)
+    console.log(`Начинаем оплату через ${method} на ${months} месяц(ев)`)
+
+    // Сохраняем информацию о подписке для обработки после оплаты
+    localStorage.setItem('pending_subscription_months', months.toString())
+
+    // Рассчитываем стоимость со скидкой
+    const basePrice = 200 // рублей за месяц
+    const totalPrice = months === 2 ? basePrice * 2 * 0.8 : basePrice * months // 20% скидка за 2 месяца
+    const amount = Math.round(totalPrice * 100) // Конвертируем в копейки
 
     // Получаем данные для оплаты
     const paymentData: PaymentData = {
-      amount: 20000, // Сумма в копейках (200₽ = 20000 копеек)
-      description: 'Premium подписка на психологический тест',
+      amount: amount,
+      description: `Premium подписка на ${months} месяц${months > 1 ? 'ев' : ''} психологического теста`,
       customerKey: this.state.currentUser?.id || 'guest',
       email: this.state.currentUser?.email || '',
-      paymentMethod: method as 'sbp' | 'card'
+      paymentMethod: method as 'sbp' | 'card',
+      subscriptionMonths: months
     }
 
     this.initiateTinkoffPayment(paymentData)
   }
 
-  private getUserBalance(): string {
-    // Получаем баланс из localStorage или Supabase
-    // Пока возвращаем демо-значение
-    const savedBalance = localStorage.getItem(`balance_${this.state.currentUser?.id || 'guest'}`)
-    return savedBalance || '0'
+  private async getUserBalance(): Promise<string> {
+    if (!this.state.currentUser) return '0'
+
+    try {
+      // Получаем баланс из Supabase
+      const { data, error } = await this.supabase
+        .from('user_balances')
+        .select('balance')
+        .eq('user_id', this.state.currentUser.id)
+        .single()
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 = не найдена запись
+        console.error('Ошибка получения баланса:', error)
+        return '0'
+      }
+
+      return data?.balance?.toString() || '0'
+    } catch (error) {
+      console.error('Ошибка при получении баланса:', error)
+      return '0'
+    }
+  }
+
+  private async updateBalanceDisplay(): Promise<void> {
+    const balanceElement = document.getElementById('user-balance')
+    if (balanceElement) {
+      const balance = await this.getUserBalance()
+      balanceElement.textContent = `${balance}₽`
+    }
+  }
+
+  private async saveUserBalance(userId: string, amount: number, subscriptionMonths: number): Promise<void> {
+    try {
+      console.log(`Сохраняем баланс для пользователя ${userId}: +${amount}₽ за ${subscriptionMonths} месяц(ев)`)
+
+      // Рассчитываем дату окончания подписки
+      const expiresAt = new Date()
+      expiresAt.setMonth(expiresAt.getMonth() + subscriptionMonths)
+
+      // Проверяем, существует ли запись о балансе пользователя
+      const { data: existingBalance, error: fetchError } = await this.supabase
+        .from('user_balances')
+        .select('balance, total_spent')
+        .eq('user_id', userId)
+        .single()
+
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        console.error('Ошибка получения существующего баланса:', fetchError)
+        return
+      }
+
+      const currentBalance = existingBalance?.balance || 0
+      const totalSpent = (existingBalance?.total_spent || 0) + amount
+
+      // Обновляем или создаем запись баланса
+      const { error: upsertError } = await this.supabase
+        .from('user_balances')
+        .upsert({
+          user_id: userId,
+          balance: currentBalance + amount,
+          total_spent: totalSpent,
+          subscription_expires_at: expiresAt.toISOString(),
+          last_updated: new Date().toISOString()
+        }, {
+          onConflict: 'user_id'
+        })
+
+      if (upsertError) {
+        console.error('Ошибка сохранения баланса:', upsertError)
+        return
+      }
+
+      // Сохраняем запись о платеже
+      const { error: paymentError } = await this.supabase
+        .from('payment_records')
+        .insert({
+          user_id: userId,
+          amount: amount * 100, // Сохраняем в копейках
+          description: `Premium подписка на ${subscriptionMonths} месяц${subscriptionMonths > 1 ? 'ев' : ''}`,
+          payment_method: 'tinkoff',
+          status: 'completed',
+          created_at: new Date().toISOString()
+        })
+
+      if (paymentError) {
+        console.error('Ошибка сохранения записи платежа:', paymentError)
+      }
+
+      console.log('✅ Баланс успешно сохранен в Supabase')
+    } catch (error) {
+      console.error('Ошибка при сохранении баланса:', error)
+    }
   }
 
   private async generateTinkoffSignature(data: any): Promise<string> {

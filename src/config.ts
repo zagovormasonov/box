@@ -12,8 +12,8 @@ export const TINKOFF_CONFIG = {
   password: 'XgjRgYsH%ikbuobD',
 
   // URLs для callback
-  successUrl: `${window.location.origin}/payment/success`,
-  failUrl: `${window.location.origin}/payment/fail`,
+  successUrl: `${window.location.origin}?payment=success`,
+  failUrl: `${window.location.origin}?payment=fail`,
   notificationUrl: `${window.location.origin}/api/payment/notification`,
 
   // Настройки платежа
@@ -28,6 +28,7 @@ export interface PaymentData {
   customerKey: string;
   email: string;
   paymentMethod: 'sbp' | 'card';
+  subscriptionMonths: number; // Количество месяцев подписки
 }
 
 export interface SubscriptionData {
@@ -36,6 +37,27 @@ export interface SubscriptionData {
   payment_method: string;
   purchased_at: string;
   status: 'active' | 'expired' | 'cancelled';
+}
+
+export interface UserBalance {
+  id?: string;
+  user_id: string;
+  balance: number; // Баланс в рублях
+  last_updated: string;
+  total_spent: number; // Общая сумма потраченная на подписки
+  subscription_expires_at?: string; // Дата окончания подписки
+}
+
+export interface PaymentRecord {
+  id?: string;
+  user_id: string;
+  amount: number; // Сумма в копейках
+  description: string;
+  payment_method: 'sbp' | 'card';
+  status: 'pending' | 'completed' | 'failed';
+  created_at: string;
+  tinkoff_payment_id?: string;
+  order_id: string;
 }
 
 // Типы для Supabase
