@@ -140,6 +140,11 @@ export class TestApp {
 
     return `
       <div id="test-screen" class="screen">
+        ${!this.state.currentUser ? `
+          <div class="auth-header">
+            <button id="test-login-btn" class="btn secondary-btn small-btn">Войти</button>
+          </div>
+        ` : ''}
         <div class="test-content">
           <!-- Шкала прогресса -->
           <div class="progress-section">
@@ -178,6 +183,7 @@ export class TestApp {
   private renderAuthScreen(): string {
     return `
       <div id="auth-screen" class="screen">
+        <button id="auth-back-btn" class="back-btn">← Назад</button>
         <div class="auth-content">
           <h2>Авторизация</h2>
           <p>Для сохранения результатов психологического теста необходимо авторизоваться</p>
@@ -227,6 +233,11 @@ export class TestApp {
 
     return `
       <div id="results-screen" class="screen">
+        ${!this.state.currentUser ? `
+          <div class="auth-header">
+            <button id="results-login-btn" class="btn secondary-btn small-btn">Войти</button>
+          </div>
+        ` : ''}
         <div class="results-content">
           <button id="back-to-dashboard-btn" class="back-btn">← Назад</button>
 
@@ -355,7 +366,7 @@ export class TestApp {
 
       if (target.id === 'start-test-btn') {
         this.startTest()
-      } else if (target.id === 'welcome-login-btn') {
+      } else if (target.id === 'welcome-login-btn' || target.id === 'test-login-btn' || target.id === 'results-login-btn') {
         this.state.currentScreen = 'auth'
         this.render()
       } else if (target.id === 'next-btn') {
@@ -370,6 +381,8 @@ export class TestApp {
         this.saveResults()
       } else if (target.id === 'restart-btn') {
         this.restartTest()
+      } else if (target.id === 'auth-back-btn') {
+        this.goBackFromAuth()
       } else if (target.id === 'logout-btn') {
         this.logout()
       } else if (target.id === 'view-results-btn') {
@@ -683,6 +696,12 @@ export class TestApp {
     alert('🎉 Подписка успешно оформлена!')
 
     // Перерисовываем интерфейс для отображения нового баланса
+    this.render()
+  }
+
+  private goBackFromAuth(): void {
+    // Возвращаемся на welcome экран (самый безопасный вариант)
+    this.state.currentScreen = 'welcome'
     this.render()
   }
 
