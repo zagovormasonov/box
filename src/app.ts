@@ -411,27 +411,13 @@ export class TestApp {
   }
 
   private startTest(): void {
-    console.log('startTest: начинаем тест')
     this.state.currentQuestionIndex = 0
     this.state.userAnswers = []
     this.state.currentScreen = 'test'
     this.saveState()
     this.render()
-
-    // Обновляем видимость экранов
     this.updateScreenVisibility()
-    console.log('Экраны переключены на test-screen')
-
-    // Инициализируем прогресс-бар
-    setTimeout(() => {
-      console.log('Инициализация прогресс-бара после старта теста')
-      const progressFill = this.appElement.querySelector('#progress-fill') as HTMLElement
-      console.log('Элемент #progress-fill найден при инициализации:', !!progressFill)
-      if (progressFill) {
-        console.log('Начальная ширина:', getComputedStyle(progressFill).width)
-      }
-      this.updateProgress()
-    }, 100)
+    this.updateProgress()
   }
 
   private selectAnswer(answerIndex: number): void {
@@ -457,11 +443,7 @@ export class TestApp {
   }
 
   private nextQuestion(): void {
-    console.log('=== nextQuestion вызвана ===')
-    console.log('Текущий индекс вопроса ДО:', this.state.currentQuestionIndex)
-
     const selectedAnswer = this.state.userAnswers[this.state.currentQuestionIndex]
-    console.log('selectedAnswer:', selectedAnswer)
 
     // Проверяем, что вопрос отвечен
     if (selectedAnswer === undefined) {
@@ -470,33 +452,15 @@ export class TestApp {
     }
 
     if (this.state.currentQuestionIndex < this.questions.length - 1) {
-      console.log('Переходим к следующему вопросу')
       // Обновляем индекс вопроса
       this.state.currentQuestionIndex++
       this.saveState()
-      console.log('Текущий индекс вопроса ПОСЛЕ:', this.state.currentQuestionIndex)
 
-      // Рендерим интерфейс
+      // Рендерим интерфейс и обновляем прогресс
       this.render()
-      console.log('Интерфейс перерендерен в nextQuestion')
-
-      // Обновляем видимость экранов
       this.updateScreenVisibility()
-      console.log('Видимость экранов обновлена')
-
-      // Проверяем элемент после рендера
-      setTimeout(() => {
-        console.log('Проверяем элемент после рендера')
-        const progressFill = this.appElement.querySelector('#progress-fill') as HTMLElement
-        console.log('Элемент #progress-fill найден после рендера:', !!progressFill)
-        if (progressFill) {
-          console.log('Ширина после рендера:', getComputedStyle(progressFill).width)
-        }
-        console.log('Вызываем updateProgress')
-        this.updateProgress()
-      }, 50)
+      this.updateProgress()
     } else {
-      console.log('Показываем результаты')
       this.showResults()
     }
   }
@@ -1122,101 +1086,14 @@ export class TestApp {
   }
 
   private updateProgress(): void {
-    console.log('updateProgress вызвана')
     const progressFill = this.appElement.querySelector('#progress-fill') as HTMLElement
-    console.log('Элемент #progress-fill найден:', !!progressFill)
-
-    if (progressFill) {
-      console.log('Текущая ширина до обновления:', progressFill.style.width)
-      console.log('Computed width до обновления:', getComputedStyle(progressFill).width)
-      console.log('Offset width до обновления:', progressFill.offsetWidth)
-    }
-
     if (progressFill) {
       const currentStep = this.state.currentQuestionIndex + 1
       const totalSteps = this.questions.length
       const progressPercent = (currentStep / totalSteps) * 100
-      const containerWidth = 400 // Фиксированная ширина контейнера
-      const pixelWidth = (progressPercent / 100) * containerWidth
 
-      console.log(`Прогресс: шаг ${currentStep}/${totalSteps} = ${progressPercent}% (${pixelWidth}px)`)
-
-      progressFill.style.width = `${pixelWidth}px`
-
-      // Гарантируем, что контейнер имеет правильную ширину
-      const container = this.appElement.querySelector('.progress-container') as HTMLElement
-      if (container) {
-        container.style.width = '400px'
-        container.style.minWidth = '200px'
-        container.style.display = 'block'
-        container.style.visibility = 'visible'
-        container.style.overflow = 'visible'
-        container.style.position = 'relative'
-      }
-
-      // Принудительно устанавливаем свойства для progress-fill
-      progressFill.style.display = 'block'
-      progressFill.style.visibility = 'visible'
-      progressFill.style.position = 'absolute'
-      progressFill.style.left = '0'
-      progressFill.style.top = '0'
-      progressFill.style.height = '100%'
-      console.log('Ширина установлена:', progressFill.style.width)
-      console.log('Значение progressPercent:', progressPercent)
-
-      // Детальная проверка всех свойств
-      const computedStyle = getComputedStyle(progressFill)
-      console.log('Детальная проверка CSS свойств:', {
-        width: computedStyle.width,
-        height: computedStyle.height,
-        display: computedStyle.display,
-        visibility: computedStyle.visibility,
-        position: computedStyle.position,
-        left: computedStyle.left,
-        top: computedStyle.top,
-        opacity: computedStyle.opacity,
-        zIndex: computedStyle.zIndex
-      })
-
-      console.log('Размеры элемента:', {
-        offsetWidth: progressFill.offsetWidth,
-        offsetHeight: progressFill.offsetHeight,
-        clientWidth: progressFill.clientWidth,
-        clientHeight: progressFill.clientHeight,
-        scrollWidth: progressFill.scrollWidth,
-        scrollHeight: progressFill.scrollHeight
-      })
-
-      // Проверяем родительские элементы
-      let parent = progressFill.parentElement
-      let depth = 0
-      while (parent && depth < 5) {
-        console.log(`Родитель ${depth}: ${parent.tagName}.${parent.className || ''}`, {
-          display: getComputedStyle(parent).display,
-          visibility: getComputedStyle(parent).visibility,
-          width: getComputedStyle(parent).width,
-          height: getComputedStyle(parent).height
-        })
-        parent = parent.parentElement
-        depth++
-      }
-
-      // Проверяем computed style через короткий таймаут
-      setTimeout(() => {
-        console.log('Computed width через 100ms:', getComputedStyle(progressFill).width)
-        console.log('OffsetWidth через 100ms:', progressFill.offsetWidth)
-      }, 100)
-
-      // Проверяем computed style через более длинный таймаут
-      setTimeout(() => {
-        console.log('Computed width через 300ms:', getComputedStyle(progressFill).width)
-        console.log('OffsetWidth через 300ms:', progressFill.offsetWidth)
-      }, 300)
-    } else {
-      console.error('Элемент #progress-fill не найден!')
-      // Показываем все элементы с классом progress-fill
-      const allProgress = this.appElement.querySelectorAll('.progress-fill')
-      console.log('Найдено элементов .progress-fill:', allProgress.length)
+      // Просто устанавливаем ширину в процентах
+      progressFill.style.width = `${progressPercent}%`
     }
   }
 }
