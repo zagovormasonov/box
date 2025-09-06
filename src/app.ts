@@ -380,7 +380,7 @@ export class TestApp {
 
     // Проверяем, что вопрос отвечен
     if (selectedAnswer === undefined) {
-      alert('Пожалуйста, выберите ответ на вопрос перед переходом дальше.')
+      this.showWarning('Пожалуйста, выберите ответ на вопрос перед переходом дальше.')
       return
     }
 
@@ -528,5 +528,61 @@ export class TestApp {
     this.state.userAnswers = []
     this.state.currentScreen = 'welcome'
     this.render()
+  }
+
+  private showWarning(message: string): void {
+    // Удаляем предыдущее предупреждение, если оно есть
+    const existingWarning = this.appElement.querySelector('.warning-toast')
+    if (existingWarning) {
+      existingWarning.remove()
+    }
+
+    // Создаем новое предупреждение
+    const warningElement = document.createElement('div')
+    warningElement.className = 'warning-toast'
+    warningElement.innerHTML = `
+      <div class="warning-content">
+        <div class="warning-icon">⚠️</div>
+        <div class="warning-text">${message}</div>
+        <button class="warning-close" aria-label="Закрыть">&times;</button>
+      </div>
+    `
+
+    // Добавляем в DOM
+    this.appElement.appendChild(warningElement)
+
+    // Показываем с анимацией
+    setTimeout(() => {
+      warningElement.classList.add('show')
+    }, 10)
+
+    // Автоматически скрываем через 4 секунды
+    const hideTimeout = setTimeout(() => {
+      this.hideWarning(warningElement)
+    }, 4000)
+
+    // Обработчик закрытия по клику
+    const closeBtn = warningElement.querySelector('.warning-close') as HTMLElement
+    closeBtn.addEventListener('click', () => {
+      clearTimeout(hideTimeout)
+      this.hideWarning(warningElement)
+    })
+
+    // Закрытие по клику вне предупреждения
+    warningElement.addEventListener('click', (e) => {
+      if (e.target === warningElement) {
+        clearTimeout(hideTimeout)
+        this.hideWarning(warningElement)
+      }
+    })
+  }
+
+  private hideWarning(warningElement: HTMLElement): void {
+    warningElement.classList.remove('show')
+    setTimeout(() => {
+      if (warningElement.parentNode) {
+        warningElement.parentNode.removeChild(warningElement)
+      }
+    }, 300)
   }
 }
