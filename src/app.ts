@@ -1211,14 +1211,60 @@ export class TestApp {
   private animateProgressBar(fromPercent: number, toPercent: number, duration: number = 600): void {
     console.log(`animateProgressBar: ${fromPercent}% -> ${toPercent}%`)
     const progressBar = this.appElement.querySelector('.progress-bar') as HTMLElement
+    const container = this.appElement.querySelector('.progress-bar-container') as HTMLElement
     console.log('Элемент progress-bar для анимации найден:', !!progressBar)
+    console.log('Элемент container найден:', !!container)
+
+    if (container) {
+      console.log('Container размеры:', {
+        offsetWidth: container.offsetWidth,
+        offsetHeight: container.offsetHeight,
+        clientWidth: container.clientWidth,
+        clientHeight: container.clientHeight,
+        scrollWidth: container.scrollWidth,
+        scrollHeight: container.scrollHeight
+      })
+      console.log('Container computed styles:', {
+        width: getComputedStyle(container).width,
+        height: getComputedStyle(container).height,
+        display: getComputedStyle(container).display,
+        visibility: getComputedStyle(container).visibility,
+        position: getComputedStyle(container).position
+      })
+    }
+
     if (!progressBar) {
       console.error('Элемент progress-bar не найден для анимации!')
       return
     }
 
+    console.log('Progress bar размеры ДО анимации:', {
+      offsetWidth: progressBar.offsetWidth,
+      offsetHeight: progressBar.offsetHeight,
+      clientWidth: progressBar.clientWidth,
+      clientHeight: progressBar.clientHeight
+    })
+    console.log('Progress bar computed styles ДО анимации:', {
+      width: getComputedStyle(progressBar).width,
+      height: getComputedStyle(progressBar).height,
+      display: getComputedStyle(progressBar).display,
+      visibility: getComputedStyle(progressBar).visibility,
+      position: getComputedStyle(progressBar).position
+    })
+
     const startTime = performance.now()
     const difference = toPercent - fromPercent
+
+    // Принудительно устанавливаем размеры контейнера
+    if (container) {
+      container.style.width = '100%'
+      container.style.display = 'block'
+      container.style.visibility = 'visible'
+      console.log('Container размеры после принудительной установки:', {
+        width: container.style.width,
+        offsetWidth: container.offsetWidth
+      })
+    }
 
     const animate = (currentTime: number) => {
       const elapsed = currentTime - startTime
@@ -1228,18 +1274,30 @@ export class TestApp {
       const easedProgress = 1 - Math.pow(1 - progress, 3) // ease-out cubic
       const currentPercent = fromPercent + (difference * easedProgress)
 
-      progressBar.style.width = `${currentPercent}%`
-      console.log(`Анимация: ${currentPercent.toFixed(1)}% (прогресс: ${(progress * 100).toFixed(1)}%)`)
+      // Пробуем разные способы установки ширины
+      if (container && container.offsetWidth > 0) {
+        // Используем пиксели вместо процентов для надежности
+        const pixelWidth = (currentPercent / 100) * container.offsetWidth
+        progressBar.style.width = `${pixelWidth}px`
+        console.log(`Анимация: ${currentPercent.toFixed(1)}% (${pixelWidth.toFixed(1)}px) (прогресс: ${(progress * 100).toFixed(1)}%)`)
+      } else {
+        // Fallback на проценты
+        progressBar.style.width = `${currentPercent}%`
+        console.log(`Анимация (fallback): ${currentPercent.toFixed(1)}% (прогресс: ${(progress * 100).toFixed(1)}%)`)
+      }
 
       // Проверяем, что стили действительно применяются
       const computedWidth = getComputedStyle(progressBar).width
+      const offsetWidth = progressBar.offsetWidth
       console.log('Computed width during animation:', computedWidth)
+      console.log('Offset width during animation:', offsetWidth)
 
       if (progress < 1) {
         requestAnimationFrame(animate)
       } else {
         console.log('Анимация прогресс-бара завершена')
         console.log('Финальная computed width:', getComputedStyle(progressBar).width)
+        console.log('Финальная offset width:', progressBar.offsetWidth)
       }
     }
 
