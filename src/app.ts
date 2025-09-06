@@ -349,7 +349,7 @@ export class TestApp {
       } else if (target.id === 'theme-toggle-btn') {
         this.toggleTheme()
       } else if (target.id === 'back-to-dashboard-btn') {
-        this.backToDashboard()
+        this.restartTest()
       } else if (target.id === 'google-login-btn') {
         this.loginWithGoogle()
       } else if (target.classList.contains('answer-option')) {
@@ -389,7 +389,6 @@ export class TestApp {
       this.saveState()
       this.render()
       // Обновляем прогресс-бар после рендера с небольшой задержкой
-      console.log('Вызываем updateProgressBar из nextQuestion')
       setTimeout(() => this.updateProgressBar(), 100)
     } else {
       this.showResults()
@@ -607,13 +606,8 @@ export class TestApp {
       const totalSteps = this.questions.length
       const progressPercent = (currentStep / totalSteps) * 100
 
-      // Принудительно устанавливаем ширину с !important
-      progressBar.style.setProperty('width', `${progressPercent}%`, 'important')
-      progressBar.style.setProperty('transition', 'width 0.8s ease', 'important')
-
-      console.log('Прогресс-бар обновлён:', progressPercent + '%', 'Элемент:', progressBar)
-    } else {
-      console.log('Прогресс-бар не найден!')
+      // Устанавливаем ширину
+      progressBar.style.width = `${progressPercent}%`
     }
   }
 }
