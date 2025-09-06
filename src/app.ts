@@ -310,6 +310,19 @@ export class TestApp {
     localStorage.setItem('darkMode', this.darkMode.toString())
     this.applyTheme()
     this.render() // Перерисовываем интерфейс с новой темой
+
+    // После смены темы обновляем баланс, если пользователь авторизован
+    if (this.state.currentUser && this.state.currentScreen === 'dashboard') {
+      setTimeout(() => this.updateBalanceDisplay(), 100)
+    }
+  }
+
+  private renderWithBalanceUpdate(): void {
+    this.render()
+    // После любого рендера обновляем баланс, если находимся в dashboard
+    if (this.state.currentUser && this.state.currentScreen === 'dashboard') {
+      setTimeout(() => this.updateBalanceDisplay(), 100)
+    }
   }
 
   private loadSavedState(): void {
@@ -749,6 +762,19 @@ export class TestApp {
     console.log('Элемент user-balance найден:', !!balanceElement)
 
     if (balanceElement) {
+      // Проверяем, что мы находимся на dashboard экране
+      if (this.state.currentScreen !== 'dashboard') {
+        console.log('Не на dashboard экране, пропускаем обновление баланса')
+        return
+      }
+
+      // Проверяем, что пользователь авторизован
+      if (!this.state.currentUser) {
+        console.log('Пользователь не авторизован, устанавливаем 0₽')
+        balanceElement.textContent = '0₽'
+        return
+      }
+
       try {
         console.log('Получаем баланс...')
         const balance = await this.getUserBalance()
