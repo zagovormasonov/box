@@ -130,7 +130,6 @@ export class TestApp {
 
     const currentStep = this.state.currentQuestionIndex + 1
     const totalSteps = this.questions.length
-    const progressPercent = (currentStep / totalSteps) * 100
 
     return `
       <div id="test-screen" class="screen">
@@ -217,7 +216,6 @@ export class TestApp {
 
     const totalQuestions = this.questions.length
     const answeredQuestions = this.state.userAnswers.filter(answer => answer !== undefined).length
-    const progressPercent = totalQuestions > 0 ? (answeredQuestions / totalQuestions) * 100 : 0
 
     return `
       <div id="results-screen" class="screen">
