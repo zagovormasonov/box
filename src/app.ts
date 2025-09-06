@@ -366,7 +366,7 @@ export class TestApp {
     this.saveState()
     this.render()
     // Небольшая задержка для правильной инициализации прогресс-бара
-    setTimeout(() => this.updateProgressBar(), 50)
+    setTimeout(() => this.updateProgressBar(), 100)
   }
 
   private selectAnswer(answerIndex: number): void {
@@ -388,8 +388,8 @@ export class TestApp {
       this.state.currentQuestionIndex++
       this.saveState()
       this.render()
-      // Обновляем прогресс-бар после рендера
-      setTimeout(() => this.updateProgressBar(), 50)
+      // Обновляем прогресс-бар после рендера с небольшой задержкой
+      setTimeout(() => this.updateProgressBar(), 100)
     } else {
       this.showResults()
     }
@@ -400,8 +400,8 @@ export class TestApp {
       this.state.currentQuestionIndex--
       this.saveState()
       this.render()
-      // Обновляем прогресс-бар после рендера
-      setTimeout(() => this.updateProgressBar(), 50)
+      // Обновляем прогресс-бар после рендера с небольшой задержкой
+      setTimeout(() => this.updateProgressBar(), 100)
     }
   }
 
@@ -601,19 +601,17 @@ export class TestApp {
       console.log('Элемент найден:', !!progressBar)
       console.log('Текущий класс:', progressBar.className)
 
-      // Добавляем небольшую задержку перед установкой ширины
+      // Принудительно устанавливаем ширину
+      progressBar.style.width = `${progressPercent}%`
+      progressBar.style.transition = 'width 0.8s ease'
+      
+      console.log('Ширина установлена в:', progressPercent + '%')
+      console.log('style.width:', progressBar.style.width)
+      
+      // Проверяем через небольшую задержку
       setTimeout(() => {
-        // Сначала попробуем простой способ
-        progressBar.style.width = `${progressPercent}%`
-        console.log('Ширина установлена в:', progressPercent + '%')
-        console.log('style.width:', progressBar.style.width)
         console.log('getComputedStyle width:', getComputedStyle(progressBar).width)
-
-        // Через секунду проверим, применилась ли ширина
-        setTimeout(() => {
-          console.log('Проверка через 1с - getComputedStyle width:', getComputedStyle(progressBar).width)
-        }, 1000)
-      }, 10)
+      }, 50)
     } else {
       console.log('Прогресс-бар не найден!')
       console.log('Все элементы с классом progress-bar:', this.appElement.querySelectorAll('.progress-bar'))

@@ -507,7 +507,7 @@ header h1 {
   height: 100%;
   background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%);
   border-radius: 4px;
-  width: 20%; /* Временно для отладки */
+  width: 0%;
   transition: width 0.8s ease;
   transform-origin: left;
   display: block;
