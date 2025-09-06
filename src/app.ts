@@ -707,64 +707,7 @@ export class TestApp {
     }
   }
 
-  private handlePaymentSuccess(paymentData: any): void {
-    // Обновляем баланс пользователя
-    const currentBalance = parseInt(this.getUserBalance()) || 0
-    const newBalance = currentBalance + (paymentData.amount / 100) // Конвертируем копейки в рубли
 
-    // Сохраняем новый баланс
-    localStorage.setItem(`balance_${this.state.currentUser?.id || 'guest'}`, newBalance.toString())
-
-    // Сохраняем информацию о подписке
-    const subscriptionData = {
-      user_id: this.state.currentUser?.id,
-      amount: paymentData.amount / 100,
-      payment_method: paymentData.paymentMethod,
-      purchased_at: new Date().toISOString(),
-      status: 'active'
-    }
-
-    console.log('Подписка оформлена:', subscriptionData)
-    alert('🎉 Подписка успешно оформлена! Ваш баланс обновлен.')
-
-    // Перерисовываем интерфейс для отображения нового баланса
-    this.render()
-  }
-
-  private async checkPaymentStatus(orderId: string): Promise<void> {
-    try {
-      const statusData: any = {
-        TerminalKey: TINKOFF_CONFIG.terminalKey,
-        OrderId: orderId
-      }
-
-      // Генерируем подпись
-      const signature = await this.generateTinkoffSignature(statusData)
-      statusData.Token = signature
-
-      const response = await fetch('https://securepay.tinkoff.ru/v2/GetState', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(statusData)
-      })
-
-      const result = await response.json()
-      console.log('Статус платежа:', result)
-
-      if (result.Success && result.Status === 'CONFIRMED') {
-        // Платеж успешен, обновляем баланс
-        const paymentData = {
-          amount: result.Amount,
-          paymentMethod: 'card' // или другой метод
-        }
-        this.handlePaymentSuccess(paymentData)
-      }
-    } catch (error) {
-      console.error('Ошибка при проверке статуса платежа:', error)
-    }
-  }
 
 
   private async loginWithGoogle(): Promise<void> {
