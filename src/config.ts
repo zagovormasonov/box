@@ -60,6 +60,29 @@ export interface PaymentRecord {
   order_id: string;
 }
 
+// Конфигурация Yandex OAuth
+export const YANDEX_CONFIG = {
+  // Получите эти ключи на https://oauth.yandex.ru/
+  // 1. Создайте приложение в Yandex OAuth
+  // 2. Выберите платформу "Веб-сервисы"
+  // 3. Укажите Callback URL
+  // 4. Скопируйте Client ID и Client Secret
+  clientId: '525d1a0db07f44488b1216e4d3ee99c9',
+  clientSecret: '3da077bc326a4813addaf6075ce4f79a',
+
+  // URL для перенаправления после авторизации
+  // Добавьте этот URL в настройках Yandex приложения
+  redirectUri: `${window.location.origin}/auth/yandex/callback`,
+
+  // Запрашиваемые разрешения
+  scope: 'login:email login:avatar',
+
+  // URL Yandex OAuth
+  authUrl: 'https://oauth.yandex.ru/authorize',
+  tokenUrl: 'https://oauth.yandex.ru/token',
+  apiUrl: 'https://login.yandex.ru/info'
+};
+
 // Типы для Supabase
 export interface TestResult {
   id?: string;

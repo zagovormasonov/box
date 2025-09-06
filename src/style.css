@@ -331,9 +331,16 @@ header h1 {
   color: #9ca3af;
 }
 
+/* Социальные сети */
+.social-auth {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
 /* Кнопка Google */
 .google-auth {
-  margin-bottom: 1rem;
+  margin-bottom: 0;
 }
 
 .google-btn {
@@ -379,6 +386,56 @@ header h1 {
 }
 
 .dark-mode .google-hint {
+  color: #9ca3af;
+}
+
+/* Кнопка Yandex */
+.yandex-auth {
+  margin-bottom: 0;
+}
+
+.yandex-btn {
+  width: 100%;
+  background-color: #FF0000 !important;
+  color: white !important;
+  border: 1px solid #FF0000 !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  font-weight: 500 !important;
+  transition: all 0.2s ease !important;
+}
+
+.yandex-btn:hover {
+  background-color: #CC0000 !important;
+  border-color: #CC0000 !important;
+  box-shadow: 0 1px 3px rgba(255, 0, 0, 0.3) !important;
+}
+
+.dark-mode .yandex-btn {
+  background-color: #CC0000 !important;
+  border-color: #CC0000 !important;
+}
+
+.dark-mode .yandex-btn:hover {
+  background-color: #990000 !important;
+  border-color: #990000 !important;
+}
+
+.yandex-btn svg {
+  flex-shrink: 0;
+}
+
+.yandex-hint {
+  margin: 0.5rem 0 0 0;
+  font-size: 0.85rem;
+  color: #6b7280;
+  text-align: center;
+  transition: color 0.2s ease;
+}
+
+.dark-mode .yandex-hint {
   color: #9ca3af;
 }
 
