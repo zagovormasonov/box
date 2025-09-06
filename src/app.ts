@@ -109,7 +109,7 @@ export class TestApp {
           <!-- Шкала прогресса -->
           <div class="progress-section">
             <div class="progress-bar-container">
-              <div class="progress-bar" style="width: 0%"></div>
+              <div class="progress-bar" data-progress="0"></div>
             </div>
             <div class="step-counter">
               Добро пожаловать!
@@ -138,7 +138,7 @@ export class TestApp {
           <!-- Шкала прогресса -->
           <div class="progress-section">
             <div class="progress-bar-container">
-              <div class="progress-bar" style="width: ${progressPercent}%"></div>
+              <div class="progress-bar" data-progress="${progressPercent}"></div>
             </div>
             <div class="step-counter">
               Шаг ${currentStep} из ${totalSteps}
@@ -227,7 +227,7 @@ export class TestApp {
           <!-- Шкала прогресса -->
           <div class="progress-section">
             <div class="progress-bar-container">
-              <div class="progress-bar" style="width: ${progressPercent}%"></div>
+              <div class="progress-bar" data-progress="${progressPercent}"></div>
             </div>
             <div class="step-counter">
               Шаг ${answeredQuestions} из ${totalQuestions}
@@ -367,6 +367,11 @@ export class TestApp {
     this.state.currentScreen = 'test'
     this.saveState()
     this.render()
+
+    // Инициализируем прогресс-бар
+    setTimeout(() => {
+      this.updateProgressBar()
+    }, 100)
   }
 
   private selectAnswer(answerIndex: number): void {
@@ -387,6 +392,7 @@ export class TestApp {
     if (this.state.currentQuestionIndex < this.questions.length - 1) {
       this.state.currentQuestionIndex++
       this.saveState()
+      this.updateProgressBar()
       this.render()
     } else {
       this.showResults()
@@ -397,6 +403,7 @@ export class TestApp {
     if (this.state.currentQuestionIndex > 0) {
       this.state.currentQuestionIndex--
       this.saveState()
+      this.updateProgressBar()
       this.render()
     }
   }
@@ -584,5 +591,20 @@ export class TestApp {
         warningElement.parentNode.removeChild(warningElement)
       }
     }, 300)
+  }
+
+  private updateProgressBar(): void {
+    const progressBar = this.appElement.querySelector('.progress-bar') as HTMLElement
+    if (progressBar) {
+      const currentStep = this.state.currentQuestionIndex + 1
+      const totalSteps = this.questions.length
+      const progressPercent = (currentStep / totalSteps) * 100
+
+      // Используем requestAnimationFrame для плавного обновления
+      requestAnimationFrame(() => {
+        progressBar.style.setProperty('--progress-width', `${progressPercent}%`)
+        progressBar.setAttribute('data-progress', progressPercent.toString())
+      })
+    }
   }
 }
