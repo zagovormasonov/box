@@ -227,7 +227,7 @@ export class TestApp {
                 </svg>
                 Войти через Яндекс
               </button>
-              <p class="yandex-hint">Вы сможете выбрать нужный Яндекс аккаунт</p>
+              <p class="yandex-hint">Быстрый вход с помощью Яндекс аккаунта</p>
             </div>
           </div>
         </div>
@@ -988,7 +988,25 @@ export class TestApp {
       }
 
       console.log('Yandex user data:', userData)
-      console.log('User fields - first_name:', userData.first_name, 'last_name:', userData.last_name, 'default_email:', userData.default_email)
+      console.log('User fields:')
+      console.log('- ID:', userData.id)
+      console.log('- Login:', userData.login)
+      console.log('- First name:', userData.first_name)
+      console.log('- Last name:', userData.last_name)
+      console.log('- Default email:', userData.default_email)
+      console.log('- Display name:', userData.display_name)
+      console.log('- Real name:', userData.real_name)
+      console.log('- All keys:', Object.keys(userData))
+
+      // Получаем данные пользователя
+      const userName = userData.display_name || userData.real_name || userData.login || `Пользователь ${userData.id}`
+      const firstName = userData.first_name || (userName ? userName.split(' ')[0] : null)
+      const lastName = userData.last_name || (userName && userName.split(' ').length > 1 ? userName.split(' ').slice(1).join(' ') : null)
+
+      console.log('Parsed user info:')
+      console.log('- Name:', userName)
+      console.log('- First name:', firstName)
+      console.log('- Last name:', lastName)
 
       // Создаем пользователя в Supabase
       const email = userData.default_email || `yandex_${userData.id}@yandex.com`
@@ -1011,8 +1029,9 @@ export class TestApp {
             options: {
               data: {
                 yandex_id: userData.id,
-                first_name: userData.first_name,
-                last_name: userData.last_name,
+                first_name: firstName,
+                last_name: lastName,
+                display_name: userName,
                 avatar_url: userData.default_avatar_id ? `https://avatars.yandex.net/get-yapic/${userData.default_avatar_id}/islands-200` : null,
                 provider: 'yandex'
               }
@@ -1033,8 +1052,9 @@ export class TestApp {
                 options: {
                   data: {
                     yandex_id: userData.id,
-                    first_name: userData.first_name,
-                    last_name: userData.last_name,
+                    first_name: firstName,
+                    last_name: lastName,
+                    display_name: userName,
                     avatar_url: userData.default_avatar_id ? `https://avatars.yandex.net/get-yapic/${userData.default_avatar_id}/islands-200` : null,
                     provider: 'yandex'
                   }
@@ -1101,8 +1121,9 @@ export class TestApp {
                 options: {
                   data: {
                     yandex_id: userData.id,
-                    first_name: userData.first_name,
-                    last_name: userData.last_name,
+                    first_name: firstName,
+                    last_name: lastName,
+                    display_name: userName,
                     avatar_url: userData.default_avatar_id ? `https://avatars.yandex.net/get-yapic/${userData.default_avatar_id}/islands-200` : null,
                     provider: 'yandex'
                   }
@@ -1570,7 +1591,8 @@ export class TestApp {
       authUrl.searchParams.set('response_type', 'code')
       authUrl.searchParams.set('scope', YANDEX_CONFIG.scope)
       authUrl.searchParams.set('state', state)
-      authUrl.searchParams.set('prompt', 'select_account') // Позволяет выбрать аккаунт
+      // Яндекс OAuth автоматически позволяет выбрать аккаунт при необходимости
+      // Не требуется дополнительных параметров
 
       // Перенаправляем пользователя на Yandex для авторизации
       window.location.href = authUrl.toString()
@@ -1696,10 +1718,17 @@ export class TestApp {
     if (metadata) {
       const firstName = metadata.first_name || metadata.given_name
       const lastName = metadata.last_name || metadata.family_name
+      const displayName = metadata.display_name
 
+      // Сначала пробуем first_name + last_name
       if (firstName || lastName) {
         const fullName = [firstName, lastName].filter(Boolean).join(' ')
         return `Добро пожаловать, ${fullName}!`
+      }
+
+      // Если нет first_name/last_name, используем display_name
+      if (displayName) {
+        return `Добро пожаловать, ${displayName}!`
       }
     }
 
@@ -1724,13 +1753,25 @@ export class TestApp {
     if (metadata) {
       const firstName = metadata.first_name || metadata.given_name
       const lastName = metadata.last_name || metadata.family_name
+      const displayName = metadata.display_name
 
+      // Сначала пробуем first_name + last_name
       if (firstName && lastName) {
         return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase()
       } else if (firstName) {
         return firstName.charAt(0).toUpperCase()
       } else if (lastName) {
         return lastName.charAt(0).toUpperCase()
+      }
+
+      // Если нет first_name/last_name, используем display_name
+      if (displayName) {
+        const nameParts = displayName.split(' ')
+        if (nameParts.length >= 2) {
+          return `${nameParts[0].charAt(0)}${nameParts[1].charAt(0)}`.toUpperCase()
+        } else {
+          return displayName.charAt(0).toUpperCase()
+        }
       }
     }
 
