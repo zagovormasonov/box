@@ -317,13 +317,6 @@ export class TestApp {
     }
   }
 
-  private renderWithBalanceUpdate(): void {
-    this.render()
-    // После любого рендера обновляем баланс, если находимся в dashboard
-    if (this.state.currentUser && this.state.currentScreen === 'dashboard') {
-      setTimeout(() => this.updateBalanceDisplay(), 100)
-    }
-  }
 
   private loadSavedState(): void {
     try {
