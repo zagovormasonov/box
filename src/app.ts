@@ -597,9 +597,11 @@ export class TestApp {
       const totalSteps = this.questions.length
       const progressPercent = (currentStep / totalSteps) * 100
 
-      // Принудительно устанавливаем ширину
-      progressBar.style.width = `${progressPercent}%`
-      progressBar.style.transition = 'width 0.8s ease'
+      // Принудительно устанавливаем ширину с !important
+      progressBar.style.setProperty('width', `${progressPercent}%`, 'important')
+      progressBar.style.setProperty('transition', 'width 0.8s ease', 'important')
+
+      console.log('Прогресс-бар обновлён:', progressPercent + '%')
     }
   }
 }

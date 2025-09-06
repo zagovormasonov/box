@@ -505,13 +505,14 @@ header h1 {
 
 .progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%);
+  background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%) !important;
   border-radius: 4px;
-  width: 0%;
-  transition: width 0.8s ease;
+  width: 20% !important; /* Временно для проверки */
+  transition: width 0.8s ease !important;
   transform-origin: left;
-  display: block;
+  display: block !important;
   position: relative;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
 }
 
 
