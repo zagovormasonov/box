@@ -365,14 +365,8 @@ export class TestApp {
     this.state.currentScreen = 'test'
     this.saveState()
     this.render()
-
-    // Инициализируем прогресс-бар
-    setTimeout(() => {
-      const progressBar = this.appElement.querySelector('.progress-bar') as HTMLElement
-      if (progressBar) {
-        progressBar.style.width = '20%' // Первый шаг из 5 вопросов = 20%
-      }
-    }, 100)
+    // Небольшая задержка для правильной инициализации прогресс-бара
+    setTimeout(() => this.updateProgressBar(), 50)
   }
 
   private selectAnswer(answerIndex: number): void {
@@ -393,8 +387,9 @@ export class TestApp {
     if (this.state.currentQuestionIndex < this.questions.length - 1) {
       this.state.currentQuestionIndex++
       this.saveState()
-      this.updateProgressBar()
       this.render()
+      // Обновляем прогресс-бар после рендера
+      setTimeout(() => this.updateProgressBar(), 50)
     } else {
       this.showResults()
     }
@@ -404,8 +399,9 @@ export class TestApp {
     if (this.state.currentQuestionIndex > 0) {
       this.state.currentQuestionIndex--
       this.saveState()
-      this.updateProgressBar()
       this.render()
+      // Обновляем прогресс-бар после рендера
+      setTimeout(() => this.updateProgressBar(), 50)
     }
   }
 
@@ -601,10 +597,15 @@ export class TestApp {
       const totalSteps = this.questions.length
       const progressPercent = (currentStep / totalSteps) * 100
 
-      // Используем requestAnimationFrame для плавного обновления
-      requestAnimationFrame(() => {
+      console.log('Обновление прогресс-бара:', progressPercent + '%')
+
+      // Добавляем небольшую задержку перед установкой ширины
+      setTimeout(() => {
         progressBar.style.width = `${progressPercent}%`
-      })
+        console.log('Ширина установлена:', progressBar.style.width)
+      }, 10)
+    } else {
+      console.log('Прогресс-бар не найден!')
     }
   }
 }
