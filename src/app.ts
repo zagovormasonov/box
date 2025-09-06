@@ -727,6 +727,39 @@ export class TestApp {
     this.initiateTinkoffPayment(paymentData)
   }
 
+  private async checkSupabaseTables(): Promise<void> {
+    try {
+      console.log('Проверяем существование таблиц в Supabase...')
+
+      // Проверяем таблицу user_balances
+      const { error: balanceError } = await this.supabase
+        .from('user_balances')
+        .select('id')
+        .limit(1)
+
+      if (balanceError) {
+        console.error('Таблица user_balances не существует или недоступна:', balanceError)
+      } else {
+        console.log('✅ Таблица user_balances доступна')
+      }
+
+      // Проверяем таблицу payment_records
+      const { error: paymentError } = await this.supabase
+        .from('payment_records')
+        .select('id')
+        .limit(1)
+
+      if (paymentError) {
+        console.error('Таблица payment_records не существует или недоступна:', paymentError)
+      } else {
+        console.log('✅ Таблица payment_records доступна')
+      }
+
+    } catch (error) {
+      console.error('Ошибка при проверке таблиц:', error)
+    }
+  }
+
   private async getUserBalance(): Promise<string> {
     if (!this.state.currentUser) {
       console.log('Пользователь не авторизован, баланс = 0')
@@ -734,6 +767,9 @@ export class TestApp {
     }
 
     try {
+      console.log('Запрашиваем баланс для пользователя:', this.state.currentUser.id)
+      console.log('Текущая сессия Supabase:', await this.supabase.auth.getSession())
+
       // Проверяем существование таблицы, если ее нет - возвращаем 0
       const { data, error } = await this.supabase
         .from('user_balances')
@@ -742,8 +778,23 @@ export class TestApp {
         .single()
 
       if (error) {
-        // Если таблица не существует или нет записи - возвращаем 0
-        console.log('Баланс не найден или таблица не существует, возвращаем 0')
+        console.error('Ошибка Supabase при получении баланса:', error)
+        console.error('Код ошибки:', error.code)
+        console.error('Сообщение ошибки:', error.message)
+
+        // Если запись не найдена - это нормально, возвращаем 0
+        if (error.code === 'PGRST116') {
+          console.log('Запись о балансе не найдена, возвращаем 0')
+          return '0'
+        }
+
+        // Для других ошибок проверяем таблицы
+        if (error.code === '406' || error.code === '42P01') {
+          console.log('Проблема с таблицей или политиками. Запускаем проверку...')
+          await this.checkSupabaseTables()
+        }
+
+        // Другие ошибки - логируем и возвращаем 0
         return '0'
       }
 
@@ -751,7 +802,7 @@ export class TestApp {
       console.log('Получен баланс из базы:', balance)
       return balance
     } catch (error) {
-      console.error('Ошибка при получении баланса:', error)
+      console.error('Исключение при получении баланса:', error)
       return '0'
     }
   }

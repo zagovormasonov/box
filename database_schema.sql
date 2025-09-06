@@ -43,11 +43,25 @@ CREATE POLICY "Users can view own balance" ON user_balances
 CREATE POLICY "Users can view own payment records" ON payment_records
   FOR SELECT USING (auth.uid() = user_id);
 
--- Система может обновлять балансы (через service role)
-CREATE POLICY "System can update balances" ON user_balances
+-- Пользователи могут вставлять свои собственные записи
+CREATE POLICY "Users can insert own balance" ON user_balances
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own payment records" ON payment_records
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- Пользователи могут обновлять свои собственные записи
+CREATE POLICY "Users can update own balance" ON user_balances
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own payment records" ON payment_records
+  FOR UPDATE USING (auth.uid() = user_id);
+
+-- Сервис может выполнять все операции (для системных задач)
+CREATE POLICY "Service can manage balances" ON user_balances
   FOR ALL USING (true);
 
-CREATE POLICY "System can manage payment records" ON payment_records
+CREATE POLICY "Service can manage payment records" ON payment_records
   FOR ALL USING (true);
 
 -- Функция для автоматического обновления last_updated
