@@ -373,6 +373,7 @@ export class TestApp {
       if (target.id === 'start-test-btn') {
         this.startTest()
       } else if (target.id === 'next-btn') {
+        console.log('Клик по кнопке Далее')
         this.nextQuestion()
       } else if (target.id === 'prev-btn') {
         this.prevQuestion()
@@ -433,12 +434,15 @@ export class TestApp {
   }
 
   private updateSelectedAnswerDisplay(): void {
+    console.log('updateSelectedAnswerDisplay вызвана')
     // Обновляем визуальное состояние выбранного ответа
     const answerOptions = this.appElement.querySelectorAll('.answer-option')
+    console.log('Найдено вариантов ответа:', answerOptions.length)
     answerOptions.forEach((option, index) => {
       const element = option as HTMLElement
       if (index === this.state.userAnswers[this.state.currentQuestionIndex]) {
         element.classList.add('selected')
+        console.log(`Вариант ${index} выбран`)
       } else {
         element.classList.remove('selected')
       }
@@ -446,6 +450,7 @@ export class TestApp {
 
     // Обновляем состояние кнопки "Далее"
     const nextBtn = this.appElement.querySelector('#next-btn') as HTMLButtonElement
+    console.log('Кнопка next-btn найдена:', !!nextBtn)
     if (nextBtn) {
       const selectedAnswer = this.state.userAnswers[this.state.currentQuestionIndex]
       const isAnswered = selectedAnswer !== undefined
@@ -455,7 +460,9 @@ export class TestApp {
   }
 
   private nextQuestion(): void {
+    console.log('nextQuestion вызвана')
     const selectedAnswer = this.state.userAnswers[this.state.currentQuestionIndex]
+    console.log('selectedAnswer:', selectedAnswer)
 
     // Проверяем, что вопрос отвечен
     if (selectedAnswer === undefined) {
@@ -464,25 +471,32 @@ export class TestApp {
     }
 
     if (this.state.currentQuestionIndex < this.questions.length - 1) {
+      console.log('Переход к следующему вопросу')
       // Получаем текущий прогресс до обновления
       const currentStep = this.state.currentQuestionIndex + 1
       const totalSteps = this.questions.length
       const fromPercent = (currentStep / totalSteps) * 100
+      console.log(`fromPercent: ${fromPercent}%`)
 
       // Обновляем индекс вопроса
       this.state.currentQuestionIndex++
       this.saveState()
+      console.log('Новый индекс вопроса:', this.state.currentQuestionIndex)
 
       // Получаем новый прогресс
       const newStep = this.state.currentQuestionIndex + 1
       const toPercent = (newStep / totalSteps) * 100
+      console.log(`toPercent: ${toPercent}%`)
 
       // Рендерим интерфейс
       this.render()
+      console.log('Интерфейс перерендерен')
 
       // Анимируем прогресс-бар
+      console.log('Вызываем animateProgressBar')
       this.animateProgressBar(fromPercent, toPercent)
     } else {
+      console.log('Показываем результаты')
       this.showResults()
     }
   }
@@ -1174,6 +1188,7 @@ export class TestApp {
   private animateProgressBar(fromPercent: number, toPercent: number, duration: number = 600): void {
     console.log(`animateProgressBar: ${fromPercent}% -> ${toPercent}%`)
     const progressBar = this.appElement.querySelector('.progress-bar') as HTMLElement
+    console.log('Элемент progress-bar для анимации найден:', !!progressBar)
     if (!progressBar) {
       console.error('Элемент progress-bar не найден для анимации!')
       return
@@ -1191,6 +1206,7 @@ export class TestApp {
       const currentPercent = fromPercent + (difference * easedProgress)
 
       progressBar.style.width = `${currentPercent}%`
+      console.log(`Анимация: ${currentPercent.toFixed(1)}% (прогресс: ${(progress * 100).toFixed(1)}%)`)
 
       if (progress < 1) {
         requestAnimationFrame(animate)
