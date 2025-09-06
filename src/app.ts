@@ -1257,13 +1257,36 @@ export class TestApp {
 
     // Принудительно устанавливаем размеры контейнера
     if (container) {
-      container.style.width = '100%'
+      // Проверяем родителей
+      let parent = container.parentElement
+      while (parent) {
+        console.log(`Родитель: ${parent.tagName}.${parent.className}, display: ${getComputedStyle(parent).display}, visibility: ${getComputedStyle(parent).visibility}`)
+        parent = parent.parentElement
+      }
+
+      // Принудительно устанавливаем размеры
+      container.style.width = '400px' // Фиксированная ширина вместо 100%
+      container.style.height = '8px'
       container.style.display = 'block'
       container.style.visibility = 'visible'
+      container.style.position = 'relative'
+      container.style.overflow = 'hidden'
+      container.style.border = '2px solid red' // Временный красный бордер для видимости
+      container.style.backgroundColor = '#f0f0f0'
+
       console.log('Container размеры после принудительной установки:', {
         width: container.style.width,
-        offsetWidth: container.offsetWidth
+        offsetWidth: container.offsetWidth,
+        clientWidth: container.clientWidth
       })
+
+      // Принудительно устанавливаем размеры прогресс-бара
+      progressBar.style.height = '100%'
+      progressBar.style.position = 'absolute'
+      progressBar.style.left = '0'
+      progressBar.style.top = '0'
+      progressBar.style.backgroundColor = '#ff0000' // Ярко-красный для видимости
+      progressBar.style.border = '1px solid #000000'
     }
 
     const animate = (currentTime: number) => {
@@ -1274,16 +1297,19 @@ export class TestApp {
       const easedProgress = 1 - Math.pow(1 - progress, 3) // ease-out cubic
       const currentPercent = fromPercent + (difference * easedProgress)
 
-      // Пробуем разные способы установки ширины
-      if (container && container.offsetWidth > 0) {
-        // Используем пиксели вместо процентов для надежности
-        const pixelWidth = (currentPercent / 100) * container.offsetWidth
-        progressBar.style.width = `${pixelWidth}px`
-        console.log(`Анимация: ${currentPercent.toFixed(1)}% (${pixelWidth.toFixed(1)}px) (прогресс: ${(progress * 100).toFixed(1)}%)`)
-      } else {
-        // Fallback на проценты
-        progressBar.style.width = `${currentPercent}%`
-        console.log(`Анимация (fallback): ${currentPercent.toFixed(1)}% (прогресс: ${(progress * 100).toFixed(1)}%)`)
+      // Используем фиксированную ширину контейнера (400px)
+      const containerWidth = 400 // Фиксированная ширина из CSS
+      const pixelWidth = Math.max(0, (currentPercent / 100) * containerWidth) // Гарантируем положительную ширину
+      progressBar.style.width = `${pixelWidth}px`
+      progressBar.style.display = 'block'
+      progressBar.style.visibility = 'visible'
+      console.log(`Анимация: ${currentPercent.toFixed(1)}% (${pixelWidth.toFixed(1)}px из ${containerWidth}px) (прогресс: ${(progress * 100).toFixed(1)}%)`)
+
+      // Дополнительно устанавливаем ширину контейнера на каждом кадре
+      if (container) {
+        container.style.width = '400px'
+        container.style.display = 'block'
+        container.style.visibility = 'visible'
       }
 
       // Проверяем, что стили действительно применяются
