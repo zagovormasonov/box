@@ -125,8 +125,8 @@ export class TestApp {
         <div class="welcome-content">
           <!-- Шкала прогресса -->
           <div class="progress-section">
-            <div class="progress-bar-container">
-              <div class="progress-bar"></div>
+            <div class="progress-container">
+              <div class="progress-fill" id="progress-fill"></div>
             </div>
             <div class="step-counter">
               Добро пожаловать!
@@ -154,8 +154,8 @@ export class TestApp {
         <div class="test-content">
           <!-- Шкала прогресса -->
           <div class="progress-section">
-            <div class="progress-bar-container">
-              <div class="progress-bar"></div>
+            <div class="progress-container">
+              <div class="progress-fill" id="progress-fill"></div>
             </div>
             <div class="step-counter">
               Шаг ${currentStep} из ${totalSteps}
@@ -411,44 +411,28 @@ export class TestApp {
   }
 
   private startTest(): void {
-    console.log('startTest: начинаем тест')
     this.state.currentQuestionIndex = 0
     this.state.userAnswers = []
     this.state.currentScreen = 'test'
     this.saveState()
     this.render()
 
-    // Ждем немного, чтобы DOM обновился, затем инициализируем прогресс-бар
+    // Инициализируем прогресс-бар
     setTimeout(() => {
-      console.log('startTest: инициализируем прогресс-бар')
-      const progressBar = this.appElement.querySelector('.progress-bar') as HTMLElement
-      if (progressBar) {
-        // Устанавливаем начальную ширину явно
-        progressBar.style.width = '10%' // 1 из 10 вопросов = 10%
-        console.log('startTest: начальная ширина установлена на 10%')
-      }
-      this.updateProgressBar()
+      this.updateProgress()
     }, 100)
   }
 
   private selectAnswer(answerIndex: number): void {
-    console.log(`Выбран ответ ${answerIndex} для вопроса ${this.state.currentQuestionIndex}`)
     this.state.userAnswers[this.state.currentQuestionIndex] = answerIndex
     this.saveState()
-    // Обновляем только необходимые элементы, без полного рендера
-    this.updateSelectedAnswerDisplay()
-  }
 
-  private updateSelectedAnswerDisplay(): void {
-    console.log('updateSelectedAnswerDisplay вызвана')
     // Обновляем визуальное состояние выбранного ответа
     const answerOptions = this.appElement.querySelectorAll('.answer-option')
-    console.log('Найдено вариантов ответа:', answerOptions.length)
     answerOptions.forEach((option, index) => {
       const element = option as HTMLElement
-      if (index === this.state.userAnswers[this.state.currentQuestionIndex]) {
+      if (index === answerIndex) {
         element.classList.add('selected')
-        console.log(`Вариант ${index} выбран`)
       } else {
         element.classList.remove('selected')
       }
@@ -456,19 +440,13 @@ export class TestApp {
 
     // Обновляем состояние кнопки "Далее"
     const nextBtn = this.appElement.querySelector('#next-btn') as HTMLButtonElement
-    console.log('Кнопка next-btn найдена:', !!nextBtn)
     if (nextBtn) {
-      const selectedAnswer = this.state.userAnswers[this.state.currentQuestionIndex]
-      const isAnswered = selectedAnswer !== undefined
-      nextBtn.disabled = !isAnswered
-      console.log('Кнопка Далее обновлена, disabled:', !isAnswered)
+      nextBtn.disabled = false
     }
   }
 
   private nextQuestion(): void {
-    console.log('nextQuestion вызвана')
     const selectedAnswer = this.state.userAnswers[this.state.currentQuestionIndex]
-    console.log('selectedAnswer:', selectedAnswer)
 
     // Проверяем, что вопрос отвечен
     if (selectedAnswer === undefined) {
@@ -477,56 +455,31 @@ export class TestApp {
     }
 
     if (this.state.currentQuestionIndex < this.questions.length - 1) {
-      console.log('Переход к следующему вопросу')
-      // Получаем текущий прогресс до обновления
-      const currentStep = this.state.currentQuestionIndex + 1
-      const totalSteps = this.questions.length
-      const fromPercent = (currentStep / totalSteps) * 100
-      console.log(`fromPercent: ${fromPercent}%`)
-
       // Обновляем индекс вопроса
       this.state.currentQuestionIndex++
       this.saveState()
-      console.log('Новый индекс вопроса:', this.state.currentQuestionIndex)
-
-      // Получаем новый прогресс
-      const newStep = this.state.currentQuestionIndex + 1
-      const toPercent = (newStep / totalSteps) * 100
-      console.log(`toPercent: ${toPercent}%`)
 
       // Рендерим интерфейс
       this.render()
-      console.log('Интерфейс перерендерен')
 
-      // Анимируем прогресс-бар
-      console.log('Вызываем animateProgressBar')
-      this.animateProgressBar(fromPercent, toPercent)
+      // Обновляем прогресс-бар
+      this.updateProgress()
     } else {
-      console.log('Показываем результаты')
       this.showResults()
     }
   }
 
   private prevQuestion(): void {
     if (this.state.currentQuestionIndex > 0) {
-      // Получаем текущий прогресс до обновления
-      const currentStep = this.state.currentQuestionIndex + 1
-      const totalSteps = this.questions.length
-      const fromPercent = (currentStep / totalSteps) * 100
-
       // Обновляем индекс вопроса
       this.state.currentQuestionIndex--
       this.saveState()
 
-      // Получаем новый прогресс
-      const newStep = this.state.currentQuestionIndex + 1
-      const toPercent = (newStep / totalSteps) * 100
-
       // Рендерим интерфейс
       this.render()
 
-      // Анимируем прогресс-бар
-      this.animateProgressBar(fromPercent, toPercent)
+      // Обновляем прогресс-бар
+      this.updateProgress()
     }
   }
 
@@ -770,38 +723,6 @@ export class TestApp {
     this.initiateTinkoffPayment(paymentData)
   }
 
-  private async checkSupabaseTables(): Promise<void> {
-    try {
-      console.log('Проверяем существование таблиц в Supabase...')
-
-      // Проверяем таблицу user_balances
-      const { error: balanceError } = await this.supabase
-        .from('user_balances')
-        .select('id')
-        .limit(1)
-
-      if (balanceError) {
-        console.error('Таблица user_balances не существует или недоступна:', balanceError)
-      } else {
-        console.log('✅ Таблица user_balances доступна')
-      }
-
-      // Проверяем таблицу payment_records
-      const { error: paymentError } = await this.supabase
-        .from('payment_records')
-        .select('id')
-        .limit(1)
-
-      if (paymentError) {
-        console.error('Таблица payment_records не существует или недоступна:', paymentError)
-      } else {
-        console.log('✅ Таблица payment_records доступна')
-      }
-
-    } catch (error) {
-      console.error('Ошибка при проверке таблиц:', error)
-    }
-  }
 
   private async getUserBalance(): Promise<string> {
     if (!this.state.currentUser) {
@@ -824,10 +745,9 @@ export class TestApp {
         console.error('Код ошибки:', error.code)
         console.error('Сообщение ошибки:', error.message)
 
-        // Для ошибок 406 или отсутствия таблицы проверяем таблицы
+        // Для ошибок 406 или отсутствия таблицы просто логируем
         if (error.code === '406' || error.code === '42P01') {
-          console.log('Проблема с таблицей или политиками. Запускаем проверку...')
-          await this.checkSupabaseTables()
+          console.log('Проблема с таблицей или политиками')
         }
 
         // Другие ошибки - возвращаем 0
@@ -1169,164 +1089,14 @@ export class TestApp {
     }, 300)
   }
 
-  private updateProgressBar(): void {
-    console.log('updateProgressBar вызвана')
-    const progressBar = this.appElement.querySelector('.progress-bar') as HTMLElement
-    const progressContainer = this.appElement.querySelector('.progress-bar-container') as HTMLElement
-    console.log('Элемент progress-bar найден:', !!progressBar)
-    console.log('Элемент progress-bar-container найден:', !!progressContainer)
-
-    if (progressContainer) {
-      console.log('Размеры контейнера:', {
-        width: progressContainer.offsetWidth,
-        height: progressContainer.offsetHeight,
-        display: getComputedStyle(progressContainer).display,
-        visibility: getComputedStyle(progressContainer).visibility
-      })
-    }
-
-    if (progressBar) {
+  private updateProgress(): void {
+    const progressFill = this.appElement.querySelector('#progress-fill') as HTMLElement
+    if (progressFill) {
       const currentStep = this.state.currentQuestionIndex + 1
       const totalSteps = this.questions.length
       const progressPercent = (currentStep / totalSteps) * 100
 
-      console.log(`Прогресс: шаг ${currentStep}/${totalSteps} = ${progressPercent}%`)
-
-      // Используем requestAnimationFrame для синхронизации с браузерным рендерингом
-      requestAnimationFrame(() => {
-        progressBar.style.width = `${progressPercent}%`
-        console.log('Ширина прогресс-бара установлена:', `${progressPercent}%`)
-        console.log('Текущая ширина элемента:', progressBar.style.width)
-        console.log('Вычисленный offsetWidth:', progressBar.offsetWidth)
-        console.log('Computed style width:', getComputedStyle(progressBar).width)
-        console.log('Computed style display:', getComputedStyle(progressBar).display)
-        console.log('Computed style visibility:', getComputedStyle(progressBar).visibility)
-        console.log('Computed style opacity:', getComputedStyle(progressBar).opacity)
-      })
-    } else {
-      console.error('Элемент .progress-bar не найден!')
+      progressFill.style.width = `${progressPercent}%`
     }
-  }
-
-  private animateProgressBar(fromPercent: number, toPercent: number, duration: number = 600): void {
-    console.log(`animateProgressBar: ${fromPercent}% -> ${toPercent}%`)
-    const progressBar = this.appElement.querySelector('.progress-bar') as HTMLElement
-    const container = this.appElement.querySelector('.progress-bar-container') as HTMLElement
-    console.log('Элемент progress-bar для анимации найден:', !!progressBar)
-    console.log('Элемент container найден:', !!container)
-
-    if (container) {
-      console.log('Container размеры:', {
-        offsetWidth: container.offsetWidth,
-        offsetHeight: container.offsetHeight,
-        clientWidth: container.clientWidth,
-        clientHeight: container.clientHeight,
-        scrollWidth: container.scrollWidth,
-        scrollHeight: container.scrollHeight
-      })
-      console.log('Container computed styles:', {
-        width: getComputedStyle(container).width,
-        height: getComputedStyle(container).height,
-        display: getComputedStyle(container).display,
-        visibility: getComputedStyle(container).visibility,
-        position: getComputedStyle(container).position
-      })
-    }
-
-    if (!progressBar) {
-      console.error('Элемент progress-bar не найден для анимации!')
-      return
-    }
-
-    console.log('Progress bar размеры ДО анимации:', {
-      offsetWidth: progressBar.offsetWidth,
-      offsetHeight: progressBar.offsetHeight,
-      clientWidth: progressBar.clientWidth,
-      clientHeight: progressBar.clientHeight
-    })
-    console.log('Progress bar computed styles ДО анимации:', {
-      width: getComputedStyle(progressBar).width,
-      height: getComputedStyle(progressBar).height,
-      display: getComputedStyle(progressBar).display,
-      visibility: getComputedStyle(progressBar).visibility,
-      position: getComputedStyle(progressBar).position
-    })
-
-    const startTime = performance.now()
-    const difference = toPercent - fromPercent
-
-    // Принудительно устанавливаем размеры контейнера
-    if (container) {
-      // Проверяем родителей
-      let parent = container.parentElement
-      while (parent) {
-        console.log(`Родитель: ${parent.tagName}.${parent.className}, display: ${getComputedStyle(parent).display}, visibility: ${getComputedStyle(parent).visibility}`)
-        parent = parent.parentElement
-      }
-
-      // Принудительно устанавливаем размеры
-      container.style.width = '400px' // Фиксированная ширина вместо 100%
-      container.style.height = '8px'
-      container.style.display = 'block'
-      container.style.visibility = 'visible'
-      container.style.position = 'relative'
-      container.style.overflow = 'hidden'
-      container.style.border = '2px solid red' // Временный красный бордер для видимости
-      container.style.backgroundColor = '#f0f0f0'
-
-      console.log('Container размеры после принудительной установки:', {
-        width: container.style.width,
-        offsetWidth: container.offsetWidth,
-        clientWidth: container.clientWidth
-      })
-
-      // Принудительно устанавливаем размеры прогресс-бара
-      progressBar.style.height = '100%'
-      progressBar.style.position = 'absolute'
-      progressBar.style.left = '0'
-      progressBar.style.top = '0'
-      progressBar.style.backgroundColor = '#ff0000' // Ярко-красный для видимости
-      progressBar.style.border = '1px solid #000000'
-    }
-
-    const animate = (currentTime: number) => {
-      const elapsed = currentTime - startTime
-      const progress = Math.min(elapsed / duration, 1)
-
-      // Используем easing функцию для плавной анимации
-      const easedProgress = 1 - Math.pow(1 - progress, 3) // ease-out cubic
-      const currentPercent = fromPercent + (difference * easedProgress)
-
-      // Используем фиксированную ширину контейнера (400px)
-      const containerWidth = 400 // Фиксированная ширина из CSS
-      const pixelWidth = Math.max(0, (currentPercent / 100) * containerWidth) // Гарантируем положительную ширину
-      progressBar.style.width = `${pixelWidth}px`
-      progressBar.style.display = 'block'
-      progressBar.style.visibility = 'visible'
-      console.log(`Анимация: ${currentPercent.toFixed(1)}% (${pixelWidth.toFixed(1)}px из ${containerWidth}px) (прогресс: ${(progress * 100).toFixed(1)}%)`)
-
-      // Дополнительно устанавливаем ширину контейнера на каждом кадре
-      if (container) {
-        container.style.width = '400px'
-        container.style.display = 'block'
-        container.style.visibility = 'visible'
-      }
-
-      // Проверяем, что стили действительно применяются
-      const computedWidth = getComputedStyle(progressBar).width
-      const offsetWidth = progressBar.offsetWidth
-      console.log('Computed width during animation:', computedWidth)
-      console.log('Offset width during animation:', offsetWidth)
-
-      if (progress < 1) {
-        requestAnimationFrame(animate)
-      } else {
-        console.log('Анимация прогресс-бара завершена')
-        console.log('Финальная computed width:', getComputedStyle(progressBar).width)
-        console.log('Финальная offset width:', progressBar.offsetWidth)
-      }
-    }
-
-    requestAnimationFrame(animate)
   }
 }

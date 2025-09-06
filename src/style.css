@@ -483,54 +483,33 @@ header h1 {
 /* Шкала прогресса */
 .progress-section {
   margin-bottom: 2rem;
-  animation: slideInProgress 0.6s ease;
 }
 
-@keyframes slideInProgress {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.progress-container {
+  width: 100%;
+  height: 12px;
+  background-color: #e5e7eb;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+  position: relative;
 }
 
-.progress-bar-container {
-  width: 100% !important;
-  height: 8px !important;
-  background-color: #e5e7eb !important;
-  border-radius: 4px !important;
-  overflow: hidden !important;
-  margin-bottom: 1rem !important;
-  transition: background-color 0.2s ease;
-  display: block !important;
-  visibility: visible !important;
-  position: relative !important;
+.dark-mode .progress-container {
+  background-color: #374151;
 }
 
-.dark-mode .progress-bar-container {
-  background-color: #374151 !important;
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%);
+  border-radius: 6px;
+  width: 0%;
+  transition: width 0.3s ease;
+  position: relative;
 }
 
-.dark-mode .progress-bar {
-  background: linear-gradient(90deg, #60a5fa 0%, #93c5fd 100%) !important;
-}
-
-.progress-bar {
-  height: 100% !important;
-  background: linear-gradient(90deg, #2563eb 0%, #3b82f6 50%, #60a5fa 100%) !important;
-  border-radius: 4px !important;
-  width: 0% !important;
-  /* Убрали transition, чтобы не конфликтовал с JS анимацией */
-  transform-origin: left !important;
-  display: block !important;
-  position: relative !important;
-  will-change: width !important;
-  box-shadow: 0 0 10px rgba(59, 130, 246, 0.5) !important;
-  visibility: visible !important;
-  opacity: 1 !important;
+.dark-mode .progress-fill {
+  background: linear-gradient(90deg, #60a5fa 0%, #93c5fd 100%);
 }
 
 
