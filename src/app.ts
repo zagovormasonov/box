@@ -994,23 +994,17 @@ export class TestApp {
       const password = Math.random().toString(36) + Math.random().toString(36) // Случайный пароль
 
       try {
-        // Проверяем, существует ли пользователь
-        const { data: existingUser } = await this.supabase.auth.getUser()
+        // Сначала пытаемся войти с существующим email и паролем (для уже зарегистрированных пользователей)
+        const { error: existingSignInError } = await this.supabase.auth.signInWithPassword({
+          email: email,
+          password: password
+        })
 
-        if (existingUser?.user) {
-          // Пользователь уже авторизован, обновляем его метаданные
-          await this.supabase.auth.updateUser({
-            data: {
-              yandex_id: userData.id,
-              first_name: userData.first_name,
-              last_name: userData.last_name,
-              avatar_url: userData.default_avatar_id ? `https://avatars.yandex.net/get-yapic/${userData.default_avatar_id}/islands-200` : null,
-              provider: 'yandex'
-            }
-          })
-        } else {
-          // Создаем нового пользователя
-          const { error: signUpError } = await this.supabase.auth.signUp({
+        if (existingSignInError) {
+          // Пользователь не найден или пароль неверный, создаем нового
+          console.log('Создаем нового пользователя для Yandex авторизации')
+
+          const { data: signUpData, error: signUpError } = await this.supabase.auth.signUp({
             email: email,
             password: password,
             options: {
@@ -1024,26 +1018,113 @@ export class TestApp {
             }
           })
 
-          if (signUpError) throw signUpError
+          if (signUpError) {
+            if (signUpError.message.includes('already registered')) {
+              // Пользователь уже существует, создаем пользователя с уникальным email
+              console.log('Пользователь уже существует, создаем с уникальным email')
 
-          // Входим под пользователем
-          const { error: signInError } = await this.supabase.auth.signInWithPassword({
-            email: email,
-            password: password
-          })
+              const uniqueEmail = `yandex_${userData.id}_${Date.now()}@yandex.com`
+              const uniquePassword = Math.random().toString(36) + Math.random().toString(36)
 
-          if (signInError) throw signInError
-        }
-      } catch (authError) {
-        console.warn('Ошибка авторизации, пробуем альтернативный подход:', authError)
+              const { data: altSignUpData, error: altSignUpError } = await this.supabase.auth.signUp({
+                email: uniqueEmail,
+                password: uniquePassword,
+                options: {
+                  data: {
+                    yandex_id: userData.id,
+                    first_name: userData.first_name,
+                    last_name: userData.last_name,
+                    avatar_url: userData.default_avatar_id ? `https://avatars.yandex.net/get-yapic/${userData.default_avatar_id}/islands-200` : null,
+                    provider: 'yandex'
+                  }
+                }
+              })
 
-        // Альтернативный подход - создаем пользователя с уникальным email
-        const uniqueEmail = `yandex_${userData.id}_${Date.now()}@yandex.com`
+              if (altSignUpError) throw altSignUpError
 
-        const { error: signUpError } = await this.supabase.auth.signUp({
-          email: uniqueEmail,
-          password: password,
-          options: {
+              // Входим под новым пользователем
+              const { error: altSignInError } = await this.supabase.auth.signInWithPassword({
+                email: uniqueEmail,
+                password: uniquePassword
+              })
+
+              if (altSignInError) throw altSignInError
+
+            } else {
+              throw signUpError
+            }
+          } else if (signUpData?.user) {
+            // Новый пользователь создан успешно
+            console.log('Новый пользователь создан:', signUpData.user.email)
+
+            // Для новых пользователей в Supabase может потребоваться подтверждение email
+            // Пробуем войти с повторными попытками
+            let signInAttempts = 0
+            const maxAttempts = 3
+
+            while (signInAttempts < maxAttempts) {
+              try {
+                const { error: signInError } = await this.supabase.auth.signInWithPassword({
+                  email: email,
+                  password: password
+                })
+
+                if (!signInError) {
+                  console.log('Успешный вход после регистрации')
+                  break
+                }
+
+                signInAttempts++
+                console.warn(`Попытка входа ${signInAttempts} не удалась:`, signInError?.message)
+
+                if (signInAttempts < maxAttempts) {
+                  // Ждем перед следующей попыткой
+                  await new Promise(resolve => setTimeout(resolve, 2000))
+                }
+              } catch (error) {
+                signInAttempts++
+                console.error(`Ошибка при попытке входа ${signInAttempts}:`, error)
+              }
+            }
+
+            // Если все попытки входа не удались
+            if (signInAttempts >= maxAttempts) {
+              console.warn('Все попытки входа не удались, создаем пользователя с уникальным email')
+
+              const uniqueEmail = `yandex_${userData.id}_${Date.now()}@yandex.com`
+              const uniquePassword = Math.random().toString(36) + Math.random().toString(36)
+
+              const { error: finalSignUpError } = await this.supabase.auth.signUp({
+                email: uniqueEmail,
+                password: uniquePassword,
+                options: {
+                  data: {
+                    yandex_id: userData.id,
+                    first_name: userData.first_name,
+                    last_name: userData.last_name,
+                    avatar_url: userData.default_avatar_id ? `https://avatars.yandex.net/get-yapic/${userData.default_avatar_id}/islands-200` : null,
+                    provider: 'yandex'
+                  }
+                }
+              })
+
+              if (finalSignUpError) throw finalSignUpError
+
+              // Входим под новым пользователем
+              const { error: finalSignInError } = await this.supabase.auth.signInWithPassword({
+                email: uniqueEmail,
+                password: uniquePassword
+              })
+
+              if (finalSignInError) throw finalSignInError
+            }
+          }
+        } else {
+          // Успешный вход существующего пользователя
+          console.log('Вход выполнен для существующего пользователя')
+
+          // Обновляем метаданные пользователя
+          await this.supabase.auth.updateUser({
             data: {
               yandex_id: userData.id,
               first_name: userData.first_name,
@@ -1051,18 +1132,11 @@ export class TestApp {
               avatar_url: userData.default_avatar_id ? `https://avatars.yandex.net/get-yapic/${userData.default_avatar_id}/islands-200` : null,
               provider: 'yandex'
             }
-          }
-        })
-
-        if (signUpError) throw signUpError
-
-        // Входим под новым пользователем
-        const { error: signInError } = await this.supabase.auth.signInWithPassword({
-          email: uniqueEmail,
-          password: password
-        })
-
-        if (signInError) throw signInError
+          })
+        }
+      } catch (error) {
+        console.error('Ошибка авторизации через Yandex:', error)
+        throw error
       }
 
       // Перенаправляем на основную страницу
@@ -1070,7 +1144,27 @@ export class TestApp {
 
     } catch (error) {
       console.error('Yandex OAuth callback error:', error)
-      alert('Ошибка обработки авторизации Яндекс: ' + (error as Error).message)
+
+      // Более подробная информация об ошибке
+      if (error instanceof Error) {
+        console.error('Error message:', error.message)
+        console.error('Error stack:', error.stack)
+      }
+
+      // Показываем пользователю понятное сообщение
+      let userMessage = 'Произошла ошибка при авторизации через Яндекс'
+
+      if (error instanceof Error) {
+        if (error.message.includes('Email not confirmed')) {
+          userMessage = 'Пожалуйста, подтвердите ваш email в письме от Supabase перед входом'
+        } else if (error.message.includes('Invalid login credentials')) {
+          userMessage = 'Неверные учетные данные. Попробуйте войти заново'
+        } else if (error.message.includes('already registered')) {
+          userMessage = 'Этот аккаунт Яндекс уже связан с другим пользователем'
+        }
+      }
+
+      alert(userMessage + '\n\nПодробности: ' + (error as Error).message)
       window.location.href = window.location.origin
     }
   }
