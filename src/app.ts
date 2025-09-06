@@ -109,7 +109,7 @@ export class TestApp {
           <!-- Шкала прогресса -->
           <div class="progress-section">
             <div class="progress-bar-container">
-              <div class="progress-bar" data-progress="0"></div>
+              <div class="progress-bar"></div>
             </div>
             <div class="step-counter">
               Добро пожаловать!
@@ -138,7 +138,7 @@ export class TestApp {
           <!-- Шкала прогресса -->
           <div class="progress-section">
             <div class="progress-bar-container">
-              <div class="progress-bar" data-progress="${progressPercent}"></div>
+              <div class="progress-bar"></div>
             </div>
             <div class="step-counter">
               Шаг ${currentStep} из ${totalSteps}
@@ -227,7 +227,7 @@ export class TestApp {
           <!-- Шкала прогресса -->
           <div class="progress-section">
             <div class="progress-bar-container">
-              <div class="progress-bar" data-progress="${progressPercent}"></div>
+              <div class="progress-bar"></div>
             </div>
             <div class="step-counter">
               Шаг ${answeredQuestions} из ${totalQuestions}
@@ -370,7 +370,10 @@ export class TestApp {
 
     // Инициализируем прогресс-бар
     setTimeout(() => {
-      this.updateProgressBar()
+      const progressBar = this.appElement.querySelector('.progress-bar') as HTMLElement
+      if (progressBar) {
+        progressBar.style.width = '20%' // Первый шаг из 5 вопросов = 20%
+      }
     }, 100)
   }
 
@@ -602,8 +605,7 @@ export class TestApp {
 
       // Используем requestAnimationFrame для плавного обновления
       requestAnimationFrame(() => {
-        progressBar.style.setProperty('--progress-width', `${progressPercent}%`)
-        progressBar.setAttribute('data-progress', progressPercent.toString())
+        progressBar.style.width = `${progressPercent}%`
       })
     }
   }
