@@ -43,6 +43,14 @@ export class TestApp {
     // Затем рендерим интерфейс и настраиваем обработчики
     this.render()
     this.setupEventListeners()
+
+    // Загружаем баланс после рендера, если пользователь авторизован
+    if (this.state.currentUser && this.state.currentScreen === 'dashboard') {
+      setTimeout(() => {
+        console.log('Вызываем updateBalanceDisplay из init()')
+        this.updateBalanceDisplay()
+      }, 200)
+    }
   }
 
   private async checkAuthState(): Promise<void> {
@@ -69,9 +77,11 @@ export class TestApp {
 
         this.state.currentUser = session?.user || null
 
-        if (event === 'SIGNED_IN' && session) {
+        if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
           this.state.currentScreen = 'dashboard'
           this.render()
+          // Загружаем баланс после входа
+          setTimeout(() => this.updateBalanceDisplay(), 100)
         } else if (event === 'SIGNED_OUT') {
           this.state.currentScreen = 'welcome'
           this.render()
@@ -82,6 +92,8 @@ export class TestApp {
             this.state.currentScreen = 'dashboard'
           }
           this.render()
+          // Загружаем баланс после обновления сессии
+          setTimeout(() => this.updateBalanceDisplay(), 100)
         }
       })
     } catch (error) {
@@ -732,16 +744,23 @@ export class TestApp {
   }
 
   private async updateBalanceDisplay(): Promise<void> {
+    console.log('updateBalanceDisplay вызвана')
     const balanceElement = document.getElementById('user-balance')
+    console.log('Элемент user-balance найден:', !!balanceElement)
+
     if (balanceElement) {
       try {
+        console.log('Получаем баланс...')
         const balance = await this.getUserBalance()
+        console.log('Баланс получен:', balance)
         balanceElement.textContent = `${balance}₽`
-        console.log('Баланс обновлен:', balance)
+        console.log('Баланс обновлен в DOM:', balance)
       } catch (error) {
         console.error('Ошибка обновления баланса:', error)
         balanceElement.textContent = '0₽'
       }
+    } else {
+      console.error('Элемент user-balance не найден в DOM')
     }
   }
 
