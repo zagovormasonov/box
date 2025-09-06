@@ -1,5 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { TestQuestion, AppState, QuestionResult, TestResult } from './types'
+import type { PaymentData } from './config'
+import { TINKOFF_CONFIG } from './config'
 
 export class TestApp {
   private questions: TestQuestion[]
@@ -264,6 +266,10 @@ export class TestApp {
             ` : ''}
             <p>Добро пожаловать!</p>
             <p>Email: ${this.state.currentUser?.email || ''}</p>
+            <div class="balance-info">
+              <span class="balance-label">Баланс:</span>
+              <span class="balance-amount">${this.getUserBalance()}₽</span>
+            </div>
           </div>
           <div class="dashboard-actions">
             <button id="view-results-btn" class="btn secondary-btn">Посмотреть результаты</button>
@@ -579,20 +585,97 @@ export class TestApp {
   }
 
   private processPayment(method: string): void {
-    // Здесь будет интеграция с платежным сервисом
+    // Интеграция с Тинькофф Оплатой
     console.log(`Начинаем оплату через ${method}`)
 
-    // Временная заглушка
-    alert(`Оплата через ${method === 'sbp' ? 'СБП' : 'банковскую карту'} будет доступна после подключения платежного сервиса.
+    // Получаем данные для оплаты
+    const paymentData: PaymentData = {
+      amount: 20000, // Сумма в копейках (200₽ = 20000 копеек)
+      description: 'Premium подписка на психологический тест',
+      customerKey: this.state.currentUser?.id || 'guest',
+      email: this.state.currentUser?.email || '',
+      paymentMethod: method as 'sbp' | 'card'
+    }
 
-Для подключения оплаты нужно:
-1. Выбрать платежный сервис (ЮKassa, Robokassa, Tinkoff Оплата и т.д.)
-2. Зарегистрироваться в сервисе
-3. Получить API ключи
-4. Настроить callback URLs
-5. Добавить код интеграции в приложение
+    this.initiateTinkoffPayment(paymentData)
+  }
 
-Хотите, чтобы я помог с интеграцией конкретного сервиса?`)
+  private getUserBalance(): string {
+    // Получаем баланс из localStorage или Supabase
+    // Пока возвращаем демо-значение
+    const savedBalance = localStorage.getItem(`balance_${this.state.currentUser?.id || 'guest'}`)
+    return savedBalance || '0'
+  }
+
+  private async initiateTinkoffPayment(paymentData: PaymentData): Promise<void> {
+    try {
+      console.log('Инициируем платёж через Тинькофф:', paymentData)
+      console.log('Конфигурация Тинькофф:', TINKOFF_CONFIG)
+
+      // Подготовка данных для Тинькофф API
+      const tinkoffPaymentData = {
+        TerminalKey: TINKOFF_CONFIG.terminalKey,
+        Amount: paymentData.amount,
+        OrderId: `order_${Date.now()}_${paymentData.customerKey}`,
+        Description: paymentData.description,
+        CustomerKey: paymentData.customerKey,
+        Email: paymentData.email,
+        SuccessURL: TINKOFF_CONFIG.successUrl,
+        FailURL: TINKOFF_CONFIG.failUrl,
+        NotificationURL: TINKOFF_CONFIG.notificationUrl,
+        // Для СБП добавляем специальные параметры
+        ...(paymentData.paymentMethod === 'sbp' && {
+          DATA: {
+            sbp: 'true'
+          }
+        })
+      }
+
+      console.log('Подготовленные данные для Тинькофф:', tinkoffPaymentData)
+
+      // Временная заглушка до подключения реального API
+      const isConfirmed = confirm(`Подтвердить оплату ${paymentData.amount / 100}₽ через ${paymentData.paymentMethod === 'sbp' ? 'СБП' : 'банковскую карту'}?
+
+Для реальной интеграции с Тинькофф Оплатой нужно:
+1. Получить TerminalKey и Password из личного кабинета Тинькофф
+2. Настроить callback URLs
+3. Добавить обработку webhook уведомлений
+4. Реализовать проверку подписи платежа
+
+Хотите, чтобы я помог с полной интеграцией?`)
+
+      if (isConfirmed) {
+        // Имитируем успешную оплату
+        this.handlePaymentSuccess(paymentData)
+      }
+    } catch (error) {
+      console.error('Ошибка при инициации платежа:', error)
+      alert('Произошла ошибка при обработке платежа')
+    }
+  }
+
+  private handlePaymentSuccess(paymentData: any): void {
+    // Обновляем баланс пользователя
+    const currentBalance = parseInt(this.getUserBalance()) || 0
+    const newBalance = currentBalance + (paymentData.amount / 100) // Конвертируем копейки в рубли
+
+    // Сохраняем новый баланс
+    localStorage.setItem(`balance_${this.state.currentUser?.id || 'guest'}`, newBalance.toString())
+
+    // Сохраняем информацию о подписке
+    const subscriptionData = {
+      user_id: this.state.currentUser?.id,
+      amount: paymentData.amount / 100,
+      payment_method: paymentData.paymentMethod,
+      purchased_at: new Date().toISOString(),
+      status: 'active'
+    }
+
+    console.log('Подписка оформлена:', subscriptionData)
+    alert('🎉 Подписка успешно оформлена!')
+
+    // Перерисовываем интерфейс для отображения нового баланса
+    this.render()
   }
 
 

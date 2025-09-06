@@ -631,6 +631,33 @@ header h1 {
   border-color: #60a5fa;
 }
 
+.balance-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding: 0.75rem 1.25rem;
+  background: linear-gradient(135deg, #10b981, #059669);
+  border-radius: 8px;
+  color: white;
+  font-weight: 600;
+}
+
+.dark-mode .balance-info {
+  background: linear-gradient(135deg, #059669, #047857);
+}
+
+.balance-label {
+  font-size: 0.95rem;
+  opacity: 0.9;
+}
+
+.balance-amount {
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
 .user-info p {
   color: #6b7280;
   margin: 0.5rem 0;
