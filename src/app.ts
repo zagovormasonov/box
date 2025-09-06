@@ -107,6 +107,11 @@ export class TestApp {
   private renderWelcomeScreen(): string {
     return `
       <div id="welcome-screen" class="screen">
+        ${!this.state.currentUser ? `
+          <div class="auth-header">
+            <button id="welcome-login-btn" class="btn secondary-btn small-btn">Войти</button>
+          </div>
+        ` : ''}
         <div class="welcome-content">
           <!-- Шкала прогресса -->
           <div class="progress-section">
@@ -350,6 +355,9 @@ export class TestApp {
 
       if (target.id === 'start-test-btn') {
         this.startTest()
+      } else if (target.id === 'welcome-login-btn') {
+        this.state.currentScreen = 'auth'
+        this.render()
       } else if (target.id === 'next-btn') {
         this.nextQuestion()
       } else if (target.id === 'prev-btn') {
