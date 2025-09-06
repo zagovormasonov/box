@@ -7,9 +7,9 @@ export const SUPABASE_CONFIG = {
 
 // Конфигурация Тинькофф Оплаты
 export const TINKOFF_CONFIG = {
-  // Эти ключи нужно получить при регистрации в Тинькофф Оплате
-  terminalKey: import.meta.env.VITE_TINKOFF_TERMINAL_KEY || 'DEMO_TERMINAL_KEY',
-  password: import.meta.env.VITE_TINKOFF_PASSWORD || 'DEMO_PASSWORD',
+  // Реальные ключи от Тинькофф
+  terminalKey: '1740030153282',
+  password: 'XgjRgYsH%ikbuobD',
 
   // URLs для callback
   successUrl: `${window.location.origin}/payment/success`,

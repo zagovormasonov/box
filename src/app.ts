@@ -393,8 +393,8 @@ export class TestApp {
     this.state.currentScreen = 'test'
     this.saveState()
     this.render()
-    // Небольшая задержка для правильной инициализации прогресс-бара
-    setTimeout(() => this.updateProgressBar(), 100)
+    // Синхронное обновление прогресса после рендера
+    requestAnimationFrame(() => this.updateProgressBar())
   }
 
   private selectAnswer(answerIndex: number): void {
@@ -404,7 +404,6 @@ export class TestApp {
   }
 
   private nextQuestion(): void {
-    console.log('Вызван nextQuestion, текущий индекс:', this.state.currentQuestionIndex)
     const selectedAnswer = this.state.userAnswers[this.state.currentQuestionIndex]
 
     // Проверяем, что вопрос отвечен
@@ -414,25 +413,49 @@ export class TestApp {
     }
 
     if (this.state.currentQuestionIndex < this.questions.length - 1) {
+      // Получаем текущий прогресс до обновления
+      const currentStep = this.state.currentQuestionIndex + 1
+      const totalSteps = this.questions.length
+      const fromPercent = (currentStep / totalSteps) * 100
+
+      // Обновляем индекс вопроса
       this.state.currentQuestionIndex++
-      console.log('Переход к следующему вопросу, новый индекс:', this.state.currentQuestionIndex)
       this.saveState()
+
+      // Получаем новый прогресс
+      const newStep = this.state.currentQuestionIndex + 1
+      const toPercent = (newStep / totalSteps) * 100
+
+      // Рендерим интерфейс
       this.render()
-      // Обновляем прогресс-бар после рендера с небольшой задержкой
-      setTimeout(() => this.updateProgressBar(), 100)
+
+      // Анимируем прогресс-бар
+      this.animateProgressBar(fromPercent, toPercent)
     } else {
-      console.log('Показываем результаты')
       this.showResults()
     }
   }
 
   private prevQuestion(): void {
     if (this.state.currentQuestionIndex > 0) {
+      // Получаем текущий прогресс до обновления
+      const currentStep = this.state.currentQuestionIndex + 1
+      const totalSteps = this.questions.length
+      const fromPercent = (currentStep / totalSteps) * 100
+
+      // Обновляем индекс вопроса
       this.state.currentQuestionIndex--
       this.saveState()
+
+      // Получаем новый прогресс
+      const newStep = this.state.currentQuestionIndex + 1
+      const toPercent = (newStep / totalSteps) * 100
+
+      // Рендерим интерфейс
       this.render()
-      // Обновляем прогресс-бар после рендера с небольшой задержкой
-      setTimeout(() => this.updateProgressBar(), 100)
+
+      // Анимируем прогресс-бар
+      this.animateProgressBar(fromPercent, toPercent)
     }
   }
 
@@ -607,13 +630,34 @@ export class TestApp {
     return savedBalance || '0'
   }
 
+  private async generateTinkoffSignature(data: any): Promise<string> {
+    // Создаем строку для подписи в алфавитном порядке ключей
+    const keys = Object.keys(data).sort()
+    let signatureString = ''
+
+    keys.forEach(key => {
+      if (data[key] !== null && data[key] !== undefined && data[key] !== '') {
+        signatureString += data[key]
+      }
+    })
+
+    // Добавляем пароль
+    signatureString += TINKOFF_CONFIG.password
+
+    // Создаем SHA256 хеш
+    const encoder = new TextEncoder()
+    const dataBuffer = encoder.encode(signatureString)
+    const hash = await crypto.subtle.digest('SHA-256', dataBuffer)
+    const hashArray = Array.from(new Uint8Array(hash))
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+  }
+
   private async initiateTinkoffPayment(paymentData: PaymentData): Promise<void> {
     try {
       console.log('Инициируем платёж через Тинькофф:', paymentData)
-      console.log('Конфигурация Тинькофф:', TINKOFF_CONFIG)
 
       // Подготовка данных для Тинькофф API
-      const tinkoffPaymentData = {
+      const tinkoffPaymentData: any = {
         TerminalKey: TINKOFF_CONFIG.terminalKey,
         Amount: paymentData.amount,
         OrderId: `order_${Date.now()}_${paymentData.customerKey}`,
@@ -631,26 +675,35 @@ export class TestApp {
         })
       }
 
-      console.log('Подготовленные данные для Тинькофф:', tinkoffPaymentData)
+      // Генерируем подпись
+      const signature = await this.generateTinkoffSignature(tinkoffPaymentData)
+      tinkoffPaymentData.Token = signature
 
-      // Временная заглушка до подключения реального API
-      const isConfirmed = confirm(`Подтвердить оплату ${paymentData.amount / 100}₽ через ${paymentData.paymentMethod === 'sbp' ? 'СБП' : 'банковскую карту'}?
+      console.log('Отправляем данные в Тинькофф:', tinkoffPaymentData)
 
-Для реальной интеграции с Тинькофф Оплатой нужно:
-1. Получить TerminalKey и Password из личного кабинета Тинькофф
-2. Настроить callback URLs
-3. Добавить обработку webhook уведомлений
-4. Реализовать проверку подписи платежа
+      // Отправляем запрос в Тинькофф API
+      const response = await fetch('https://securepay.tinkoff.ru/v2/Init', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(tinkoffPaymentData)
+      })
 
-Хотите, чтобы я помог с полной интеграцией?`)
+      const result = await response.json()
+      console.log('Ответ от Тинькофф:', result)
 
-      if (isConfirmed) {
-        // Имитируем успешную оплату
-        this.handlePaymentSuccess(paymentData)
+      if (result.Success) {
+        // Перенаправляем пользователя на страницу оплаты
+        window.location.href = result.PaymentURL
+      } else {
+        console.error('Ошибка Тинькофф:', result.Message)
+        alert(`Ошибка оплаты: ${result.Message}`)
       }
+
     } catch (error) {
       console.error('Ошибка при инициации платежа:', error)
-      alert('Произошла ошибка при обработке платежа')
+      alert('Произошла ошибка при обработке платежа. Попробуйте позже.')
     }
   }
 
@@ -672,10 +725,45 @@ export class TestApp {
     }
 
     console.log('Подписка оформлена:', subscriptionData)
-    alert('🎉 Подписка успешно оформлена!')
+    alert('🎉 Подписка успешно оформлена! Ваш баланс обновлен.')
 
     // Перерисовываем интерфейс для отображения нового баланса
     this.render()
+  }
+
+  private async checkPaymentStatus(orderId: string): Promise<void> {
+    try {
+      const statusData: any = {
+        TerminalKey: TINKOFF_CONFIG.terminalKey,
+        OrderId: orderId
+      }
+
+      // Генерируем подпись
+      const signature = await this.generateTinkoffSignature(statusData)
+      statusData.Token = signature
+
+      const response = await fetch('https://securepay.tinkoff.ru/v2/GetState', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(statusData)
+      })
+
+      const result = await response.json()
+      console.log('Статус платежа:', result)
+
+      if (result.Success && result.Status === 'CONFIRMED') {
+        // Платеж успешен, обновляем баланс
+        const paymentData = {
+          amount: result.Amount,
+          paymentMethod: 'card' // или другой метод
+        }
+        this.handlePaymentSuccess(paymentData)
+      }
+    } catch (error) {
+      console.error('Ошибка при проверке статуса платежа:', error)
+    }
   }
 
 
@@ -803,14 +891,35 @@ export class TestApp {
       const totalSteps = this.questions.length
       const progressPercent = (currentStep / totalSteps) * 100
 
-      console.log('Обновление прогресс-бара:', progressPercent + '%')
-      console.log('Элемент найден:', progressBar)
-      // Устанавливаем ширину
-      progressBar.style.width = `${progressPercent}%`
-      console.log('Ширина установлена:', progressBar.style.width)
-    } else {
-      console.log('Прогресс-бар не найден!')
-      console.log('Все элементы с классом progress-bar:', document.querySelectorAll('.progress-bar'))
+      // Используем requestAnimationFrame для синхронизации с браузерным рендерингом
+      requestAnimationFrame(() => {
+        progressBar.style.width = `${progressPercent}%`
+      })
     }
+  }
+
+  private animateProgressBar(fromPercent: number, toPercent: number, duration: number = 600): void {
+    const progressBar = this.appElement.querySelector('.progress-bar') as HTMLElement
+    if (!progressBar) return
+
+    const startTime = performance.now()
+    const difference = toPercent - fromPercent
+
+    const animate = (currentTime: number) => {
+      const elapsed = currentTime - startTime
+      const progress = Math.min(elapsed / duration, 1)
+
+      // Используем easing функцию для плавной анимации
+      const easedProgress = 1 - Math.pow(1 - progress, 3) // ease-out cubic
+      const currentPercent = fromPercent + (difference * easedProgress)
+
+      progressBar.style.width = `${currentPercent}%`
+
+      if (progress < 1) {
+        requestAnimationFrame(animate)
+      }
+    }
+
+    requestAnimationFrame(animate)
   }
 }
