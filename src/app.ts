@@ -109,7 +109,7 @@ export class TestApp {
           <!-- Шкала прогресса -->
           <div class="progress-section">
             <div class="progress-bar-container">
-              <div class="progress-bar"></div>
+              <div class="progress-bar" data-progress="0"></div>
             </div>
             <div class="step-counter">
               Добро пожаловать!
@@ -137,7 +137,7 @@ export class TestApp {
           <!-- Шкала прогресса -->
           <div class="progress-section">
             <div class="progress-bar-container">
-              <div class="progress-bar"></div>
+              <div class="progress-bar" data-progress="0"></div>
             </div>
             <div class="step-counter">
               Шаг ${currentStep} из ${totalSteps}
@@ -225,7 +225,7 @@ export class TestApp {
           <!-- Шкала прогресса -->
           <div class="progress-section">
             <div class="progress-bar-container">
-              <div class="progress-bar"></div>
+              <div class="progress-bar" data-progress="0"></div>
             </div>
             <div class="step-counter">
               Шаг ${answeredQuestions} из ${totalQuestions}
@@ -598,14 +598,25 @@ export class TestApp {
       const progressPercent = (currentStep / totalSteps) * 100
 
       console.log('Обновление прогресс-бара:', progressPercent + '%')
+      console.log('Элемент найден:', !!progressBar)
+      console.log('Текущий класс:', progressBar.className)
 
       // Добавляем небольшую задержку перед установкой ширины
       setTimeout(() => {
+        // Сначала попробуем простой способ
         progressBar.style.width = `${progressPercent}%`
-        console.log('Ширина установлена:', progressBar.style.width)
+        console.log('Ширина установлена в:', progressPercent + '%')
+        console.log('style.width:', progressBar.style.width)
+        console.log('getComputedStyle width:', getComputedStyle(progressBar).width)
+
+        // Через секунду проверим, применилась ли ширина
+        setTimeout(() => {
+          console.log('Проверка через 1с - getComputedStyle width:', getComputedStyle(progressBar).width)
+        }, 1000)
       }, 10)
     } else {
       console.log('Прогресс-бар не найден!')
+      console.log('Все элементы с классом progress-bar:', this.appElement.querySelectorAll('.progress-bar'))
     }
   }
 }
