@@ -479,14 +479,25 @@ export class TestApp {
 
   private async logout(): Promise<void> {
     try {
-      const { error } = await this.supabase.auth.signOut()
-      if (error) throw error
+      // Проверяем текущую сессию перед выходом
+      const { data: { session } } = await this.supabase.auth.getSession()
 
+      if (session) {
+        // Если сессия существует, выполняем выход
+        const { error } = await this.supabase.auth.signOut()
+        if (error) throw error
+      }
+
+      // В любом случае очищаем локальное состояние
       this.state.currentUser = null
       this.state.currentScreen = 'welcome'
       this.render()
     } catch (error) {
-      alert('Ошибка выхода: ' + (error as Error).message)
+      console.warn('Ошибка при выходе:', error)
+      // Даже если вышла ошибка, очищаем локальное состояние
+      this.state.currentUser = null
+      this.state.currentScreen = 'welcome'
+      this.render()
     }
   }
 
