@@ -227,7 +227,7 @@ export class TestApp {
                 </svg>
                 Войти через Яндекс
               </button>
-              <p class="yandex-hint">Всегда выбирайте аккаунт Яндекс</p>
+              <p class="yandex-hint">Быстрый вход с помощью Яндекс аккаунта</p>
             </div>
           </div>
         </div>
@@ -287,14 +287,15 @@ export class TestApp {
               <div class="user-avatar">
                 <img src="${this.state.currentUser.user_metadata.avatar_url}"
                      alt="Аватар пользователя"
-                     onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\\'avatar-placeholder\\'>${this.getUserInitials()}</div>'" />
+                     onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\\'avatar-placeholder\\'>${(this.state.currentUser.email || '').charAt(0).toUpperCase()}</div>'" />
               </div>
-            ` : `
+            ` : this.state.currentUser?.email ? `
               <div class="user-avatar">
                 <div class="avatar-placeholder">${this.getUserInitials()}</div>
               </div>
-            `}
+            ` : ''}
             <p>${this.getUserGreeting()}</p>
+            <p>Email: ${this.state.currentUser?.email || ''}</p>
             <div class="balance-info">
               <span class="balance-label">Баланс:</span>
               <span class="balance-amount" id="user-balance">Загрузка...</span>
@@ -818,33 +819,12 @@ export class TestApp {
       if (error) throw error
       }
 
-      // Очищаем данные Yandex из localStorage
-      const keysToRemove = []
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i)
-        if (key && key.startsWith('yandex_user_')) {
-          keysToRemove.push(key)
-        }
-      }
-      keysToRemove.forEach(key => localStorage.removeItem(key))
-
       // В любом случае очищаем локальное состояние
       this.state.currentUser = null
       this.state.currentScreen = 'welcome'
       this.render()
     } catch (error) {
       console.warn('Ошибка при выходе:', error)
-
-      // Очищаем данные Yandex из localStorage даже при ошибке
-      const keysToRemove = []
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i)
-        if (key && key.startsWith('yandex_user_')) {
-          keysToRemove.push(key)
-        }
-      }
-      keysToRemove.forEach(key => localStorage.removeItem(key))
-
       // Даже если вышла ошибка, очищаем локальное состояние
       this.state.currentUser = null
       this.state.currentScreen = 'welcome'
@@ -1008,78 +988,21 @@ export class TestApp {
       }
 
       console.log('Yandex user data:', userData)
-      console.log('User fields:')
-      console.log('- ID:', userData.id)
-      console.log('- Login:', userData.login)
-      console.log('- First name:', userData.first_name)
-      console.log('- Last name:', userData.last_name)
-      console.log('- Default email:', userData.default_email)
-      console.log('- Display name:', userData.display_name)
-      console.log('- Real name:', userData.real_name)
-      console.log('- All keys:', Object.keys(userData))
-
-      // Получаем данные пользователя
-      const userName = userData.display_name || userData.real_name || userData.login || `Пользователь ${userData.id}`
-      const firstName = userData.first_name || (userName ? userName.split(' ')[0] : null)
-      const lastName = userData.last_name || (userName && userName.split(' ').length > 1 ? userName.split(' ').slice(1).join(' ') : null)
-
-      console.log('Parsed user info:')
-      console.log('- Name:', userName)
-      console.log('- First name:', firstName)
-      console.log('- Last name:', lastName)
 
       // Создаем пользователя в Supabase
       const email = userData.default_email || `yandex_${userData.id}@yandex.com`
       const password = Math.random().toString(36) + Math.random().toString(36) // Случайный пароль
 
       try {
-        // Проверяем, есть ли уже пользователь с таким Yandex ID в localStorage
-        const yandexUserKey = `yandex_user_${userData.id}`
-        const existingUserData = localStorage.getItem(yandexUserKey)
+        // Сначала пытаемся войти с существующим email и паролем (для уже зарегистрированных пользователей)
+        const { error: existingSignInError } = await this.supabase.auth.signInWithPassword({
+          email: email,
+          password: password
+        })
 
-        let existingUser = null
-        let existingPassword = null
-
-        if (existingUserData) {
-          try {
-            const parsed = JSON.parse(existingUserData)
-            existingUser = parsed
-            existingPassword = parsed.password
-            console.log('Найден существующий пользователь в localStorage:', existingUser.email)
-          } catch (e) {
-            console.warn('Ошибка парсинга данных пользователя из localStorage')
-          }
-        }
-
-        if (existingUser && existingPassword) {
-          // Пытаемся войти под существующим пользователем
-          console.log('Пытаемся войти под существующим пользователем')
-          const { error: existingSignInError } = await this.supabase.auth.signInWithPassword({
-            email: existingUser.email,
-            password: existingPassword
-          })
-
-          if (!existingSignInError) {
-            console.log('Успешный вход под существующим пользователем')
-            // Обновляем метаданные пользователя
-            await this.supabase.auth.updateUser({
-              data: {
-                yandex_id: userData.id,
-                first_name: firstName,
-                last_name: lastName,
-                display_name: userName,
-                avatar_url: userData.default_avatar_id ? `https://avatars.yandex.net/get-yapic/${userData.default_avatar_id}/islands-200` : null,
-                provider: 'yandex'
-              }
-            })
-            return // Выходим из функции, вход успешен
-          } else {
-            console.warn('Не удалось войти под существующим пользователем:', existingSignInError.message)
-          }
-        }
-
-        // Если существующего пользователя нет или вход не удался, создаем нового
-        console.log('Создаем нового пользователя для Yandex авторизации')
+        if (existingSignInError) {
+          // Пользователь не найден или пароль неверный, создаем нового
+          console.log('Создаем нового пользователя для Yandex авторизации')
 
           const { error: signUpError } = await this.supabase.auth.signUp({
             email: email,
@@ -1087,9 +1010,8 @@ export class TestApp {
             options: {
               data: {
                 yandex_id: userData.id,
-                first_name: firstName,
-                last_name: lastName,
-                display_name: userName,
+                first_name: userData.first_name,
+                last_name: userData.last_name,
                 avatar_url: userData.default_avatar_id ? `https://avatars.yandex.net/get-yapic/${userData.default_avatar_id}/islands-200` : null,
                 provider: 'yandex'
               }
@@ -1110,9 +1032,8 @@ export class TestApp {
                 options: {
                   data: {
                     yandex_id: userData.id,
-                    first_name: firstName,
-                    last_name: lastName,
-                    display_name: userName,
+                    first_name: userData.first_name,
+                    last_name: userData.last_name,
                     avatar_url: userData.default_avatar_id ? `https://avatars.yandex.net/get-yapic/${userData.default_avatar_id}/islands-200` : null,
                     provider: 'yandex'
                   }
@@ -1120,15 +1041,6 @@ export class TestApp {
               })
 
               if (altSignUpError) throw altSignUpError
-
-              // Сохраняем данные пользователя в localStorage
-              const userDataToStore = {
-                email: uniqueEmail,
-                password: uniquePassword,
-                yandexId: userData.id,
-                createdAt: Date.now()
-              }
-              localStorage.setItem(yandexUserKey, JSON.stringify(userDataToStore))
 
               // Входим под новым пользователем
               const { error: altSignInError } = await this.supabase.auth.signInWithPassword({
@@ -1159,16 +1071,6 @@ export class TestApp {
 
                 if (!signInError) {
                   console.log('Успешный вход после регистрации')
-
-                  // Сохраняем данные пользователя в localStorage для будущих входов
-                  const userDataToStore = {
-                    email: email,
-                    password: password,
-                    yandexId: userData.id,
-                    createdAt: Date.now()
-                  }
-                  localStorage.setItem(yandexUserKey, JSON.stringify(userDataToStore))
-
                   break
                 }
 
@@ -1198,9 +1100,8 @@ export class TestApp {
                 options: {
                   data: {
                     yandex_id: userData.id,
-                    first_name: firstName,
-                    last_name: lastName,
-                    display_name: userName,
+                    first_name: userData.first_name,
+                    last_name: userData.last_name,
                     avatar_url: userData.default_avatar_id ? `https://avatars.yandex.net/get-yapic/${userData.default_avatar_id}/islands-200` : null,
                     provider: 'yandex'
                   }
@@ -1208,15 +1109,6 @@ export class TestApp {
               })
 
               if (finalSignUpError) throw finalSignUpError
-
-              // Сохраняем данные пользователя в localStorage
-              const finalUserDataToStore = {
-                email: uniqueEmail,
-                password: uniquePassword,
-                yandexId: userData.id,
-                createdAt: Date.now()
-              }
-              localStorage.setItem(yandexUserKey, JSON.stringify(finalUserDataToStore))
 
               // Входим под новым пользователем
               const { error: finalSignInError } = await this.supabase.auth.signInWithPassword({
@@ -1677,7 +1569,6 @@ export class TestApp {
       authUrl.searchParams.set('response_type', 'code')
       authUrl.searchParams.set('scope', YANDEX_CONFIG.scope)
       authUrl.searchParams.set('state', state)
-      // Всегда показывать выбор аккаунта
       authUrl.searchParams.set('prompt', 'select_account')
 
       // Перенаправляем пользователя на Yandex для авторизации
@@ -1783,16 +1674,6 @@ export class TestApp {
     }, 300)
   }
 
-  private updateProgress(): void {
-    const progressFill = this.appElement.querySelector('#progress-fill') as HTMLElement
-    if (progressFill) {
-      const currentStep = this.state.currentQuestionIndex + 1
-      const totalSteps = this.questions.length
-      const progressPercent = (currentStep / totalSteps) * 100
-      progressFill.style.width = `${progressPercent}%`
-    }
-  }
-
   private getUserGreeting(): string {
     if (!this.state.currentUser) {
       return 'Добро пожаловать!'
@@ -1802,19 +1683,13 @@ export class TestApp {
 
     // Проверяем, есть ли имя пользователя из OAuth провайдеров
     if (metadata) {
-      const firstName = metadata.first_name || metadata.given_name
-      const lastName = metadata.last_name || metadata.family_name
-      const displayName = metadata.display_name
+      const firstName = metadata.first_name
+      const lastName = metadata.last_name
 
       // Сначала пробуем first_name + last_name
       if (firstName || lastName) {
         const fullName = [firstName, lastName].filter(Boolean).join(' ')
         return `Добро пожаловать, ${fullName}!`
-      }
-
-      // Если нет first_name/last_name, используем display_name
-      if (displayName) {
-        return `Добро пожаловать, ${displayName}!`
       }
     }
 
@@ -1837,9 +1712,8 @@ export class TestApp {
 
     // Проверяем, есть ли имя пользователя из OAuth провайдеров
     if (metadata) {
-      const firstName = metadata.first_name || metadata.given_name
-      const lastName = metadata.last_name || metadata.family_name
-      const displayName = metadata.display_name
+      const firstName = metadata.first_name
+      const lastName = metadata.last_name
 
       // Сначала пробуем first_name + last_name
       if (firstName && lastName) {
@@ -1848,16 +1722,6 @@ export class TestApp {
         return firstName.charAt(0).toUpperCase()
       } else if (lastName) {
         return lastName.charAt(0).toUpperCase()
-      }
-
-      // Если нет first_name/last_name, используем display_name
-      if (displayName) {
-        const nameParts = displayName.split(' ')
-        if (nameParts.length >= 2) {
-          return `${nameParts[0].charAt(0)}${nameParts[1].charAt(0)}`.toUpperCase()
-        } else {
-          return displayName.charAt(0).toUpperCase()
-        }
       }
     }
 
@@ -1868,6 +1732,16 @@ export class TestApp {
     }
 
     return '?'
+  }
+
+  private updateProgress(): void {
+    const progressFill = this.appElement.querySelector('#progress-fill') as HTMLElement
+    if (progressFill) {
+      const currentStep = this.state.currentQuestionIndex + 1
+      const totalSteps = this.questions.length
+      const progressPercent = (currentStep / totalSteps) * 100
+      progressFill.style.width = `${progressPercent}%`
+    }
   }
 
 }
