@@ -123,14 +123,9 @@ export class TestApp {
     return `
       <div id="welcome-screen" class="screen">
         <div class="welcome-content">
-          <!-- Шкала прогресса -->
-          <div class="progress-section">
-            <div class="progress-container">
-              <div class="progress-fill" id="progress-fill"></div>
-            </div>
-            <div class="step-counter">
-              Добро пожаловать!
-            </div>
+          <!-- Прогресс-бар -->
+          <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
           </div>
 
           <p>Пройдите наш психологический тест для лучшего понимания себя</p>
@@ -152,14 +147,12 @@ export class TestApp {
     return `
       <div id="test-screen" class="screen">
         <div class="test-content">
-          <!-- Шкала прогресса -->
-          <div class="progress-section">
-            <div class="progress-container">
-              <div class="progress-fill" id="progress-fill"></div>
+          <!-- Прогресс-бар -->
+          <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
             </div>
             <div class="step-counter">
               Шаг ${currentStep} из ${totalSteps}
-            </div>
           </div>
 
           <div id="question-container">
@@ -417,12 +410,6 @@ export class TestApp {
     this.saveState()
     this.render()
     this.updateScreenVisibility()
-
-    // Сбрасываем прогресс-бар в начало
-    const progressFill = this.appElement.querySelector('#progress-fill') as HTMLElement
-    if (progressFill) {
-      progressFill.style.width = '0%'
-    }
     this.updateProgress()
   }
 
@@ -462,7 +449,7 @@ export class TestApp {
       this.state.currentQuestionIndex++
       this.saveState()
 
-      // Рендерим интерфейс и обновляем прогресс
+      // Рендерим интерфейс
       this.render()
       this.updateScreenVisibility()
       this.updateProgress()
@@ -479,8 +466,6 @@ export class TestApp {
 
       // Рендерим интерфейс
       this.render()
-
-      // Обновляем прогресс-бар
       this.updateProgress()
     }
   }
@@ -1094,9 +1079,11 @@ export class TestApp {
   private updateProgress(): void {
     const progressFill = this.appElement.querySelector('#progress-fill') as HTMLElement
     if (progressFill) {
-      const currentWidth = parseFloat(progressFill.style.width) || 0
-      const newWidth = currentWidth + 20
-      progressFill.style.width = `${newWidth}%`
+      const currentStep = this.state.currentQuestionIndex + 1
+      const totalSteps = this.questions.length
+      const progressPercent = (currentStep / totalSteps) * 100
+      progressFill.style.width = `${progressPercent}%`
     }
   }
+
 }

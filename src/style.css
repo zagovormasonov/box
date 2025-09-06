@@ -480,34 +480,26 @@ header h1 {
   padding-top: 3rem;
 }
 
-/* Шкала прогресса */
-.progress-section {
-  margin-bottom: 2rem;
-}
-
-.progress-container {
+/* Прогресс-бар */
+.progress-bar {
   width: 100%;
-  min-width: 200px; /* Минимальная ширина для корректного расчета процентов */
-  height: 12px;
+  height: 8px;
   background-color: #e5e7eb;
-  border-radius: 6px;
+  border-radius: 4px;
   overflow: hidden;
   margin-bottom: 1rem;
-  position: relative;
-  box-sizing: border-box;
 }
 
-.dark-mode .progress-container {
+.dark-mode .progress-bar {
   background-color: #374151;
 }
 
 .progress-fill {
   height: 100%;
   background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%);
-  border-radius: 6px;
-  width: 10%; /* Начальная ширина 10% вместо 0% */
+  border-radius: 4px;
+  width: 0%;
   transition: width 0.3s ease;
-  position: relative;
 }
 
 .dark-mode .progress-fill {
