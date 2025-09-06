@@ -394,7 +394,7 @@ export class TestApp {
       } else if (target.id === 'back-to-dashboard-btn') {
         if (this.state.currentUser) {
           // Авторизованный пользователь - в личный кабинет
-          this.backToDashboard()
+        this.backToDashboard()
         } else {
           // Неавторизованный пользователь - на начало теста
           this.restartTest()
@@ -537,8 +537,8 @@ export class TestApp {
 
       if (session) {
         // Если сессия существует, выполняем выход
-        const { error } = await this.supabase.auth.signOut()
-        if (error) throw error
+      const { error } = await this.supabase.auth.signOut()
+      if (error) throw error
       }
 
       // В любом случае очищаем локальное состояние
@@ -763,35 +763,34 @@ export class TestApp {
       console.log('Запрашиваем баланс для пользователя:', this.state.currentUser.id)
       console.log('Текущая сессия Supabase:', await this.supabase.auth.getSession())
 
-      // Проверяем существование таблицы, если ее нет - возвращаем 0
+      // Получаем баланс пользователя (может вернуть 0 или 1 запись)
       const { data, error } = await this.supabase
         .from('user_balances')
         .select('balance')
         .eq('user_id', this.state.currentUser.id)
-        .single()
 
       if (error) {
         console.error('Ошибка Supabase при получении баланса:', error)
         console.error('Код ошибки:', error.code)
         console.error('Сообщение ошибки:', error.message)
 
-        // Если запись не найдена - это нормально, возвращаем 0
-        if (error.code === 'PGRST116') {
-          console.log('Запись о балансе не найдена, возвращаем 0')
-          return '0'
-        }
-
-        // Для других ошибок проверяем таблицы
+        // Для ошибок 406 или отсутствия таблицы проверяем таблицы
         if (error.code === '406' || error.code === '42P01') {
           console.log('Проблема с таблицей или политиками. Запускаем проверку...')
           await this.checkSupabaseTables()
         }
 
-        // Другие ошибки - логируем и возвращаем 0
+        // Другие ошибки - возвращаем 0
         return '0'
       }
 
-      const balance = data?.balance?.toString() || '0'
+      // Проверяем, есть ли данные (для новых пользователей data будет пустым массивом)
+      if (!data || data.length === 0) {
+        console.log('Запись о балансе не найдена (новый пользователь), возвращаем 0')
+        return '0'
+      }
+
+      const balance = data[0]?.balance?.toString() || '0'
       console.log('Получен баланс из базы:', balance)
       return balance
     } catch (error) {
@@ -847,15 +846,14 @@ export class TestApp {
         .from('user_balances')
         .select('balance, total_spent')
         .eq('user_id', userId)
-        .single()
 
-      if (fetchError && fetchError.code !== 'PGRST116') {
+      if (fetchError) {
         console.error('Ошибка получения существующего баланса:', fetchError)
         return
       }
 
-      const currentBalance = existingBalance?.balance || 0
-      const totalSpent = (existingBalance?.total_spent || 0) + amount
+      const currentBalance = existingBalance && existingBalance.length > 0 ? existingBalance[0].balance : 0
+      const totalSpent = (existingBalance && existingBalance.length > 0 ? existingBalance[0].total_spent : 0) + amount
 
       // Обновляем или создаем запись баланса
       const { error: upsertError } = await this.supabase
