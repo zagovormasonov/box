@@ -419,6 +419,12 @@ export class TestApp {
 
     // Инициализируем прогресс-бар
     setTimeout(() => {
+      console.log('Инициализация прогресс-бара после старта теста')
+      const progressFill = this.appElement.querySelector('#progress-fill') as HTMLElement
+      console.log('Элемент #progress-fill найден при инициализации:', !!progressFill)
+      if (progressFill) {
+        console.log('Начальная ширина:', getComputedStyle(progressFill).width)
+      }
       this.updateProgress()
     }, 100)
   }
@@ -463,8 +469,15 @@ export class TestApp {
       this.render()
       console.log('Интерфейс перерендерен в nextQuestion, вызываем updateProgress')
 
-      // Обновляем прогресс-бар
-      this.updateProgress()
+      // Проверяем элемент после рендера
+      setTimeout(() => {
+        const progressFill = this.appElement.querySelector('#progress-fill') as HTMLElement
+        console.log('Элемент #progress-fill найден после рендера:', !!progressFill)
+        if (progressFill) {
+          console.log('Ширина после рендера:', getComputedStyle(progressFill).width)
+        }
+        this.updateProgress()
+      }, 50)
     } else {
       this.showResults()
     }
@@ -1094,6 +1107,12 @@ export class TestApp {
     console.log('updateProgress вызвана')
     const progressFill = this.appElement.querySelector('#progress-fill') as HTMLElement
     console.log('Элемент #progress-fill найден:', !!progressFill)
+
+    if (progressFill) {
+      console.log('Текущая ширина до обновления:', progressFill.style.width)
+      console.log('Computed width до обновления:', getComputedStyle(progressFill).width)
+      console.log('Offset width до обновления:', progressFill.offsetWidth)
+    }
 
     if (progressFill) {
       const currentStep = this.state.currentQuestionIndex + 1

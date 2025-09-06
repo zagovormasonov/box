@@ -504,10 +504,11 @@ header h1 {
   height: 100%;
   background: linear-gradient(90deg, #ff0000 0%, #ff4444 100%); /* Ярко-красный для видимости */
   border-radius: 6px;
-  width: 0%;
+  width: 10%; /* Начальная ширина 10% вместо 0% */
   transition: width 0.3s ease;
   position: relative;
   border: 2px solid #000000; /* Черная рамка для видимости */
+  min-width: 20px; /* Минимальная ширина для видимости */
 }
 
 .dark-mode .progress-fill {
