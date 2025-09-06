@@ -79,3 +79,14 @@ export interface TestQuestion {
   answers: string[];
 }
 
+// Типы для поделиться результатами
+export interface SharedTestResult {
+  id?: string;
+  user_id: string;
+  share_id: string;
+  test_result: QuestionResult[];
+  personality_type: string;
+  description: string;
+  created_at: string;
+}
+

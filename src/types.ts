@@ -19,10 +19,12 @@ export interface TestResult {
 }
 
 export interface AppState {
-  currentScreen: 'welcome' | 'test' | 'auth' | 'results' | 'dashboard';
+  currentScreen: 'welcome' | 'test' | 'auth' | 'results' | 'dashboard' | 'shared-results';
   currentQuestionIndex: number;
   userAnswers: number[];
   currentUser: User | null;
+  shareId?: string; // ID для поделиться результатами
+  sharedResults?: any; // Результаты другого пользователя для просмотра
 }
 
 export type ScreenType = AppState['currentScreen'];

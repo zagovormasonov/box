@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { TestQuestion, AppState, QuestionResult, TestResult } from './types'
-import type { PaymentData } from './config'
+import type { PaymentData, SharedTestResult } from './config'
 import { TINKOFF_CONFIG } from './config'
 
 export class TestApp {
@@ -39,6 +39,9 @@ export class TestApp {
 
     // Обрабатываем возврат от оплаты
     await this.handlePaymentReturn()
+
+    // Обрабатываем URL параметры для просмотра чужих результатов
+    await this.handleShareUrl()
 
     // Затем рендерим интерфейс и настраиваем обработчики
     this.render()
@@ -113,6 +116,7 @@ export class TestApp {
           ${this.renderAuthScreen()}
           ${this.renderResultsScreen()}
           ${this.renderDashboardScreen()}
+          ${this.renderSharedResultsScreen()}
         </main>
       </div>
     `
@@ -248,6 +252,7 @@ export class TestApp {
 
           <!-- Кнопки навигации -->
           <div class="navigation-buttons">
+            <button id="share-results-btn" class="btn share-btn">📤 Поделиться</button>
             <button id="save-results-btn" class="btn primary-btn">Сохранить результаты</button>
             <button id="restart-btn" class="btn secondary-btn">Пройти заново</button>
           </div>
@@ -285,6 +290,42 @@ export class TestApp {
             <button id="theme-toggle-btn" class="btn secondary-btn">${this.darkMode ? '☀️ Светлая тема' : '🌙 Темная тема'}</button>
             <button id="subscribe-btn" class="btn primary-btn">💎 Оформить подписку</button>
             <button id="logout-btn" class="btn logout-btn">Выйти</button>
+          </div>
+        </div>
+      </div>
+    `
+  }
+
+  private renderSharedResultsScreen(): string {
+    if (!this.state.sharedResults) {
+      return ''
+    }
+
+    const sharedResults = this.state.sharedResults
+    const results = sharedResults.test_result.map((result: any) => `
+      <div class="result-item">
+        <h4>${result.question}</h4>
+        <p><strong>Ответ:</strong> ${result.answer}</p>
+      </div>
+    `).join('')
+
+    return `
+      <div id="shared-results-screen" class="screen">
+        <div class="results-content">
+          <button id="back-to-welcome-btn" class="back-btn">← На главную</button>
+
+          <h2>Результаты теста</h2>
+          <div class="shared-results-info">
+            <p><strong>Тип личности:</strong> ${sharedResults.personality_type}</p>
+            <p><strong>Описание:</strong> ${sharedResults.description}</p>
+            <p><em>Результаты поделены: ${new Date(sharedResults.created_at).toLocaleDateString('ru-RU')}</em></p>
+          </div>
+
+          <div id="shared-results-container">${results}</div>
+
+          <div class="shared-actions">
+            <button id="take-test-btn" class="btn primary-btn">Пройти тест самому</button>
+            <button id="share-this-result-btn" class="btn share-btn">📤 Поделиться</button>
           </div>
         </div>
       </div>
@@ -359,7 +400,7 @@ export class TestApp {
   }
 
   private setupEventListeners(): void {
-    this.appElement.addEventListener('click', (e) => {
+    this.appElement.addEventListener('click', async (e) => {
       const target = e.target as HTMLElement
       console.log('Клик по элементу:', target.id || target.className || target.tagName)
 
@@ -367,13 +408,15 @@ export class TestApp {
         this.startTest()
       } else if (target.id === 'next-btn') {
         console.log('Клик по кнопке Далее')
-        this.nextQuestion()
+        await this.nextQuestion()
       } else if (target.id === 'prev-btn') {
         this.prevQuestion()
       } else if (target.id === 'login-btn') {
         this.login()
       } else if (target.id === 'register-btn') {
         this.register()
+      } else if (target.id === 'share-results-btn') {
+        this.showShareModal()
       } else       if (target.id === 'save-results-btn') {
         this.saveResults()
       } else if (target.id === 'restart-btn') {
@@ -396,6 +439,16 @@ export class TestApp {
         }
       } else if (target.id === 'google-login-btn') {
         this.loginWithGoogle()
+      } else if (target.id === 'back-to-welcome-btn') {
+        this.state.currentScreen = 'welcome'
+        this.saveState()
+        this.render()
+      } else if (target.id === 'take-test-btn') {
+        this.state.currentScreen = 'welcome'
+        this.saveState()
+        this.render()
+      } else if (target.id === 'share-this-result-btn') {
+        this.showShareModal()
       } else if (target.classList.contains('answer-option')) {
         const answerIndex = parseInt(target.dataset.answerIndex || '0')
         this.selectAnswer(answerIndex)
@@ -435,7 +488,7 @@ export class TestApp {
     }
   }
 
-  private nextQuestion(): void {
+  private async nextQuestion(): Promise<void> {
     const selectedAnswer = this.state.userAnswers[this.state.currentQuestionIndex]
 
     // Проверяем, что вопрос отвечен
@@ -454,7 +507,7 @@ export class TestApp {
       this.updateScreenVisibility()
       this.updateProgress()
     } else {
-      this.showResults()
+      await this.showResults()
     }
   }
 
@@ -470,9 +523,199 @@ export class TestApp {
     }
   }
 
-  private showResults(): void {
+  private async saveTestResults(): Promise<void> {
+    try {
+      const { data: userData } = await this.supabase.auth.getUser()
+      if (!userData?.user) {
+        console.log('Пользователь не авторизован, результаты не будут сохранены')
+        return
+      }
+
+      // Создаем уникальный share_id (6 символов)
+      const shareId = Math.random().toString(36).substring(2, 8).toUpperCase()
+
+      // Собираем результаты теста
+      const testResults: QuestionResult[] = this.questions.map((question, index) => {
+        const answerIndex = this.state.userAnswers[index]
+        return {
+          question: question.question,
+          answer: question.answers[answerIndex] || 'Не отвечено',
+          questionIndex: index
+        }
+      })
+
+      // Определяем тип личности (простая логика для демонстрации)
+      const personalityType = this.determinePersonalityType(testResults)
+      const description = this.getPersonalityDescription(personalityType)
+
+      const sharedResult: Omit<SharedTestResult, 'id' | 'created_at'> = {
+        user_id: userData.user.id,
+        share_id: shareId,
+        test_result: testResults,
+        personality_type: personalityType,
+        description: description
+      }
+
+      const { error } = await this.supabase
+        .from('test_results')
+        .insert(sharedResult)
+
+      if (error) {
+        console.error('Ошибка сохранения результатов:', error)
+      } else {
+        console.log('Результаты сохранены с share_id:', shareId)
+        // Сохраняем share_id в state для кнопки поделиться
+        this.state.shareId = shareId
+        this.saveState()
+      }
+    } catch (error) {
+      console.error('Ошибка при сохранении результатов:', error)
+    }
+  }
+
+  private determinePersonalityType(results: QuestionResult[]): string {
+    // Простая логика определения типа личности на основе ответов
+    const answerCounts: { [key: string]: number } = {}
+
+    results.forEach(result => {
+      const answer = result.answer
+      answerCounts[answer] = (answerCounts[answer] || 0) + 1
+    })
+
+    // Определяем наиболее частый ответ
+    const mostCommonAnswer = Object.keys(answerCounts).reduce((a, b) =>
+      answerCounts[a] > answerCounts[b] ? a : b
+    )
+
+    // Возвращаем тип личности на основе наиболее частого ответа
+    const personalityTypes: { [key: string]: string } = {
+      'А': 'Аналитик',
+      'Б': 'Коммуникатор',
+      'В': 'Лидер',
+      'Г': 'Творческая личность'
+    }
+
+    return personalityTypes[mostCommonAnswer.charAt(0)] || 'Универсал'
+  }
+
+  private getPersonalityDescription(personalityType: string): string {
+    const descriptions: { [key: string]: string } = {
+      'Аналитик': 'Вы склонны к логическому мышлению и предпочитаете анализировать ситуации перед принятием решений.',
+      'Коммуникатор': 'Вы обладаете отличными навыками общения и легко находите общий язык с людьми.',
+      'Лидер': 'Вы естественный лидер, который может мотивировать и организовывать других.',
+      'Творческая личность': 'Вы креативны и предпочитаете нестандартные подходы к решению проблем.',
+      'Универсал': 'Вы обладаете сбалансированными качествами и можете адаптироваться к разным ситуациям.'
+    }
+
+    return descriptions[personalityType] || 'Ваш тип личности уникален и сочетает в себе различные качества.'
+  }
+
+  private showShareModal(): void {
+    if (!this.state.shareId) {
+      this.showWarning('Результаты ещё не сохранены. Попробуйте ещё раз.')
+      return
+    }
+
+    const shareUrl = `${window.location.origin}?share=${this.state.shareId}`
+
+    // Создаем модальное окно
+    const modal = document.createElement('div')
+    modal.className = 'share-modal-overlay'
+    modal.innerHTML = `
+      <div class="share-modal">
+        <div class="share-modal-header">
+          <h3>📤 Поделиться результатами</h3>
+          <button class="close-modal-btn">&times;</button>
+        </div>
+        <div class="share-modal-body">
+          <p>Скопируйте эту ссылку и поделитесь с друзьями:</p>
+          <div class="share-link-container">
+            <input type="text" id="share-link-input" value="${shareUrl}" readonly>
+            <button id="copy-link-btn" class="btn copy-btn">📋 Копировать</button>
+          </div>
+          <div class="share-buttons">
+            <button id="share-telegram-btn" class="btn share-platform-btn">
+              📱 Telegram
+            </button>
+            <button id="share-whatsapp-btn" class="btn share-platform-btn">
+              💬 WhatsApp
+            </button>
+            <button id="share-vk-btn" class="btn share-platform-btn">
+              📘 VK
+            </button>
+          </div>
+        </div>
+      </div>
+    `
+
+    document.body.appendChild(modal)
+
+    // Обработчики событий
+    const closeBtn = modal.querySelector('.close-modal-btn') as HTMLElement
+    const copyBtn = modal.querySelector('#copy-link-btn') as HTMLElement
+    const shareLinkInput = modal.querySelector('#share-link-input') as HTMLInputElement
+
+    closeBtn.addEventListener('click', () => {
+      document.body.removeChild(modal)
+    })
+
+    copyBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(shareUrl)
+        copyBtn.textContent = '✅ Скопировано!'
+        copyBtn.classList.add('copied')
+        setTimeout(() => {
+          copyBtn.textContent = '📋 Копировать'
+          copyBtn.classList.remove('copied')
+        }, 2000)
+      } catch (error) {
+        // Fallback для старых браузеров
+        shareLinkInput.select()
+        document.execCommand('copy')
+        copyBtn.textContent = '✅ Скопировано!'
+        copyBtn.classList.add('copied')
+        setTimeout(() => {
+          copyBtn.textContent = '📋 Копировать'
+          copyBtn.classList.remove('copied')
+        }, 2000)
+      }
+    })
+
+    // Кнопки для поделиться в соцсетях
+    const telegramBtn = modal.querySelector('#share-telegram-btn') as HTMLElement
+    const whatsappBtn = modal.querySelector('#share-whatsapp-btn') as HTMLElement
+    const vkBtn = modal.querySelector('#share-vk-btn') as HTMLElement
+
+    telegramBtn.addEventListener('click', () => {
+      const text = encodeURIComponent('Посмотри мои результаты психологического теста!')
+      window.open(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${text}`, '_blank')
+    })
+
+    whatsappBtn.addEventListener('click', () => {
+      const text = encodeURIComponent('Посмотри мои результаты психологического теста! ' + shareUrl)
+      window.open(`https://wa.me/?text=${text}`, '_blank')
+    })
+
+    vkBtn.addEventListener('click', () => {
+      const text = encodeURIComponent('Посмотри мои результаты психологического теста!')
+      window.open(`https://vk.com/share.php?url=${encodeURIComponent(shareUrl)}&title=${text}`, '_blank')
+    })
+
+    // Закрытие по клику вне модального окна
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        document.body.removeChild(modal)
+      }
+    })
+  }
+
+  private async showResults(): Promise<void> {
     this.state.currentScreen = 'results'
     this.saveState()
+
+    // Сохраняем результаты в базу данных для возможности поделиться
+    await this.saveTestResults()
+
     this.render()
   }
 
@@ -591,6 +834,35 @@ export class TestApp {
       }
     } else if (paymentStatus === 'fail') {
       alert('❌ Оплата не была завершена')
+    }
+  }
+
+  private async handleShareUrl(): Promise<void> {
+    const urlParams = new URLSearchParams(window.location.search)
+    const shareId = urlParams.get('share')
+
+    if (shareId) {
+      // Загружаем результаты по share_id
+      try {
+        const { data, error } = await this.supabase
+          .from('test_results')
+          .select('*')
+          .eq('share_id', shareId)
+          .single()
+
+        if (error) {
+          console.error('Ошибка загрузки результатов:', error)
+          return
+        }
+
+        if (data) {
+          // Показываем чужие результаты
+          this.state.sharedResults = data
+          this.state.currentScreen = 'shared-results'
+        }
+      } catch (error) {
+        console.error('Ошибка при обработке share URL:', error)
+      }
     }
   }
 

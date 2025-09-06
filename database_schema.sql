@@ -64,6 +64,43 @@ CREATE POLICY "Service can manage balances" ON user_balances
 CREATE POLICY "Service can manage payment records" ON payment_records
   FOR ALL USING (true);
 
+-- Создание таблицы для хранения результатов тестов
+CREATE TABLE IF NOT EXISTS test_results (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  share_id VARCHAR(10) NOT NULL UNIQUE, -- Короткий ID для поделиться
+  test_result JSONB NOT NULL, -- Результаты теста в JSON формате
+  personality_type VARCHAR(100) NOT NULL,
+  description TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+  UNIQUE(user_id, share_id)
+);
+
+-- Индексы для оптимизации запросов
+CREATE INDEX IF NOT EXISTS idx_test_results_user_id ON test_results(user_id);
+CREATE INDEX IF NOT EXISTS idx_test_results_share_id ON test_results(share_id);
+CREATE INDEX IF NOT EXISTS idx_test_results_created_at ON test_results(created_at);
+
+-- Row Level Security (RLS) политики
+ALTER TABLE test_results ENABLE ROW LEVEL SECURITY;
+
+-- Пользователи могут видеть только свои результаты
+CREATE POLICY "Users can view own test results" ON test_results
+  FOR SELECT USING (auth.uid() = user_id);
+
+-- Все могут видеть результаты по share_id (для поделиться)
+CREATE POLICY "Anyone can view shared test results" ON test_results
+  FOR SELECT USING (true);
+
+-- Пользователи могут вставлять свои собственные результаты
+CREATE POLICY "Users can insert own test results" ON test_results
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- Пользователи могут обновлять свои собственные результаты
+CREATE POLICY "Users can update own test results" ON test_results
+  FOR UPDATE USING (auth.uid() = user_id);
+
 -- Функция для автоматического обновления last_updated
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
