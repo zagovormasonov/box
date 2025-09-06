@@ -251,6 +251,17 @@ export class TestApp {
         <div class="dashboard-content">
           <h2>Личный кабинет</h2>
           <div class="user-info">
+            ${this.state.currentUser?.user_metadata?.avatar_url ? `
+              <div class="user-avatar">
+                <img src="${this.state.currentUser.user_metadata.avatar_url}"
+                     alt="Аватар пользователя"
+                     onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\\'avatar-placeholder\\'>${(this.state.currentUser.email || '').charAt(0).toUpperCase()}</div>'" />
+              </div>
+            ` : this.state.currentUser?.email ? `
+              <div class="user-avatar">
+                <div class="avatar-placeholder">${this.state.currentUser.email.charAt(0).toUpperCase()}</div>
+              </div>
+            ` : ''}
             <p>Добро пожаловать!</p>
             <p>Email: ${this.state.currentUser?.email || ''}</p>
           </div>
