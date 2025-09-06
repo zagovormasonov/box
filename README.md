@@ -77,7 +77,7 @@ export const SUPABASE_CONFIG = {
 export const YANDEX_CONFIG = {
   clientId: 'ВАШ_CLIENT_ID_ЗДЕСЬ',
   clientSecret: 'ВАШ_CLIENT_SECRET_ЗДЕСЬ',
-  // ... остальные настройки остаются
+  // ... остальные настройки
 }
 ```
 

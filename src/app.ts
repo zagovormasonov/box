@@ -994,14 +994,22 @@ export class TestApp {
       const password = Math.random().toString(36) + Math.random().toString(36) // Случайный пароль
 
       try {
-        // Сначала пытаемся войти с существующим email
-        const { error: signInError } = await this.supabase.auth.signInWithPassword({
-          email: email,
-          password: password
-        })
+        // Проверяем, существует ли пользователь
+        const { data: existingUser } = await this.supabase.auth.getUser()
 
-        if (signInError && signInError.message.includes('Invalid login credentials')) {
-          // Пользователь не существует, создаем нового
+        if (existingUser?.user) {
+          // Пользователь уже авторизован, обновляем его метаданные
+          await this.supabase.auth.updateUser({
+            data: {
+              yandex_id: userData.id,
+              first_name: userData.first_name,
+              last_name: userData.last_name,
+              avatar_url: userData.default_avatar_id ? `https://avatars.yandex.net/get-yapic/${userData.default_avatar_id}/islands-200` : null,
+              provider: 'yandex'
+            }
+          })
+        } else {
+          // Создаем нового пользователя
           const { error: signUpError } = await this.supabase.auth.signUp({
             email: email,
             password: password,
@@ -1018,18 +1026,18 @@ export class TestApp {
 
           if (signUpError) throw signUpError
 
-          // Теперь пытаемся войти вновь
-          const { error: finalSignInError } = await this.supabase.auth.signInWithPassword({
+          // Входим под пользователем
+          const { error: signInError } = await this.supabase.auth.signInWithPassword({
             email: email,
             password: password
           })
 
-          if (finalSignInError) throw finalSignInError
-        } else if (signInError) {
-          throw signInError
+          if (signInError) throw signInError
         }
-      } catch (error) {
-        // Если возникла ошибка, попробуем другой подход - создаем уникальный email
+      } catch (authError) {
+        console.warn('Ошибка авторизации, пробуем альтернативный подход:', authError)
+
+        // Альтернативный подход - создаем пользователя с уникальным email
         const uniqueEmail = `yandex_${userData.id}_${Date.now()}@yandex.com`
 
         const { error: signUpError } = await this.supabase.auth.signUp({
@@ -1049,12 +1057,12 @@ export class TestApp {
         if (signUpError) throw signUpError
 
         // Входим под новым пользователем
-        const { error: finalSignInError } = await this.supabase.auth.signInWithPassword({
+        const { error: signInError } = await this.supabase.auth.signInWithPassword({
           email: uniqueEmail,
           password: password
         })
 
-        if (finalSignInError) throw finalSignInError
+        if (signInError) throw signInError
       }
 
       // Перенаправляем на основную страницу
@@ -1066,6 +1074,7 @@ export class TestApp {
       window.location.href = window.location.origin
     }
   }
+
 
   private showSubscriptionModal(): void {
     const modal = document.createElement('div')

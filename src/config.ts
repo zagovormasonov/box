@@ -60,6 +60,7 @@ export interface PaymentRecord {
   order_id: string;
 }
 
+
 // Конфигурация Yandex OAuth
 export const YANDEX_CONFIG = {
   // Получите эти ключи на https://oauth.yandex.ru/
