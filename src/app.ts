@@ -573,6 +573,9 @@ export class TestApp {
         // Очищаем pending данные
         localStorage.removeItem('pending_subscription_months')
 
+        // Обновляем баланс в интерфейсе
+        await this.updateBalanceDisplay()
+
         // Показываем уведомление об успешной оплате
         setTimeout(() => {
           alert(`✅ Оплата прошла успешно!\n\nНа ваш счет зачислено: ${amount}₽\nПодписка активна на ${months} месяц${months > 1 ? 'ев' : ''}`)
@@ -700,22 +703,28 @@ export class TestApp {
   }
 
   private async getUserBalance(): Promise<string> {
-    if (!this.state.currentUser) return '0'
+    if (!this.state.currentUser) {
+      console.log('Пользователь не авторизован, баланс = 0')
+      return '0'
+    }
 
     try {
-      // Получаем баланс из Supabase
+      // Проверяем существование таблицы, если ее нет - возвращаем 0
       const { data, error } = await this.supabase
         .from('user_balances')
         .select('balance')
         .eq('user_id', this.state.currentUser.id)
         .single()
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 = не найдена запись
-        console.error('Ошибка получения баланса:', error)
+      if (error) {
+        // Если таблица не существует или нет записи - возвращаем 0
+        console.log('Баланс не найден или таблица не существует, возвращаем 0')
         return '0'
       }
 
-      return data?.balance?.toString() || '0'
+      const balance = data?.balance?.toString() || '0'
+      console.log('Получен баланс из базы:', balance)
+      return balance
     } catch (error) {
       console.error('Ошибка при получении баланса:', error)
       return '0'
@@ -725,8 +734,14 @@ export class TestApp {
   private async updateBalanceDisplay(): Promise<void> {
     const balanceElement = document.getElementById('user-balance')
     if (balanceElement) {
-      const balance = await this.getUserBalance()
-      balanceElement.textContent = `${balance}₽`
+      try {
+        const balance = await this.getUserBalance()
+        balanceElement.textContent = `${balance}₽`
+        console.log('Баланс обновлен:', balance)
+      } catch (error) {
+        console.error('Ошибка обновления баланса:', error)
+        balanceElement.textContent = '0₽'
+      }
     }
   }
 
@@ -866,14 +881,7 @@ export class TestApp {
       if (result.Success) {
         // Перенаправляем пользователя на страницу оплаты
         console.log('Успешно создана ссылка на оплату:', result.PaymentURL)
-        alert(`Перенаправляем вас на страницу оплаты Тинькофф...
-
-Метод оплаты: ${paymentData.paymentMethod === 'sbp' ? 'СБП (QR-код должен открыться автоматически)' : 'Банковская карта'}
-Сумма: ${paymentData.amount / 100}₽
-
-${paymentData.paymentMethod === 'sbp' ? 'После перехода на страницу Тинькофф должен автоматически открыться QR-код для оплаты через приложение вашего банка.' : ''}
-
-Если QR-код не появился, попробуйте обновить страницу или используйте оплату картой.`)
+        console.log(`Оплата: ${paymentData.paymentMethod === 'sbp' ? 'СБП' : 'Карта'}, Сумма: ${paymentData.amount / 100}₽`)
 
         window.location.href = result.PaymentURL
       } else {
