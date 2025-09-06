@@ -525,11 +525,20 @@ export class TestApp {
 
   private async saveTestResults(): Promise<void> {
     try {
-      const { data: userData } = await this.supabase.auth.getUser()
+      console.log('saveTestResults: начинаем сохранение результатов')
+      const { data: userData, error: userError } = await this.supabase.auth.getUser()
+
+      if (userError) {
+        console.error('Ошибка получения пользователя:', userError)
+        return
+      }
+
       if (!userData?.user) {
         console.log('Пользователь не авторизован, результаты не будут сохранены')
         return
       }
+
+      console.log('Пользователь авторизован:', userData.user.id)
 
       // Создаем уникальный share_id (6 символов)
       const shareId = Math.random().toString(36).substring(2, 8).toUpperCase()
@@ -556,13 +565,17 @@ export class TestApp {
         description: description
       }
 
-      const { error } = await this.supabase
+      console.log('Сохраняем результат в базу данных...')
+      const { data, error } = await this.supabase
         .from('test_results')
         .insert(sharedResult)
+        .select()
 
       if (error) {
         console.error('Ошибка сохранения результатов:', error)
+        console.error('Детали ошибки:', error.message, error.details, error.hint)
       } else {
+        console.log('Результаты успешно сохранены:', data)
         console.log('Результаты сохранены с share_id:', shareId)
         // Сохраняем share_id в state для кнопки поделиться
         this.state.shareId = shareId
@@ -611,8 +624,22 @@ export class TestApp {
   }
 
   private showShareModal(): void {
+    console.log('showShareModal вызвана, shareId:', this.state.shareId)
+
     if (!this.state.shareId) {
-      this.showWarning('Результаты ещё не сохранены. Попробуйте ещё раз.')
+      console.log('shareId не найден, пытаемся сохранить результаты...')
+      // Попробуем сохранить результаты еще раз
+      this.saveTestResults().then(() => {
+        if (this.state.shareId) {
+          console.log('Результаты сохранены, открываем модальное окно')
+          this.showShareModal()
+        } else {
+          this.showWarning('Не удалось сохранить результаты. Проверьте подключение к интернету.')
+        }
+      }).catch((error) => {
+        console.error('Ошибка при повторном сохранении:', error)
+        this.showWarning('Ошибка сохранения результатов. Попробуйте ещё раз.')
+      })
       return
     }
 
