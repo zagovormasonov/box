@@ -417,6 +417,12 @@ export class TestApp {
     this.saveState()
     this.render()
     this.updateScreenVisibility()
+
+    // Сбрасываем прогресс-бар в начало
+    const progressFill = this.appElement.querySelector('#progress-fill') as HTMLElement
+    if (progressFill) {
+      progressFill.style.width = '0%'
+    }
     this.updateProgress()
   }
 
@@ -1088,12 +1094,9 @@ export class TestApp {
   private updateProgress(): void {
     const progressFill = this.appElement.querySelector('#progress-fill') as HTMLElement
     if (progressFill) {
-      const currentStep = this.state.currentQuestionIndex + 1
-      const totalSteps = this.questions.length
-      const progressPercent = (currentStep / totalSteps) * 100
-
-      // Просто устанавливаем ширину в процентах
-      progressFill.style.width = `${progressPercent}%`
+      const currentWidth = parseFloat(progressFill.style.width) || 0
+      const newWidth = currentWidth + 20
+      progressFill.style.width = `${newWidth}%`
     }
   }
 }
