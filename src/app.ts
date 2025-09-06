@@ -327,6 +327,7 @@ export class TestApp {
   private setupEventListeners(): void {
     this.appElement.addEventListener('click', (e) => {
       const target = e.target as HTMLElement
+      console.log('Клик по элементу:', target.id || target.className || target.tagName)
 
       if (target.id === 'start-test-btn') {
         this.startTest()
@@ -349,6 +350,8 @@ export class TestApp {
       } else if (target.id === 'theme-toggle-btn') {
         this.toggleTheme()
       } else if (target.id === 'back-to-dashboard-btn') {
+        console.log('Нажата кнопка назад из результатов, target:', target)
+        console.log('Текущий экран:', this.state.currentScreen)
         this.restartTest()
       } else if (target.id === 'google-login-btn') {
         this.loginWithGoogle()
@@ -376,6 +379,7 @@ export class TestApp {
   }
 
   private nextQuestion(): void {
+    console.log('Вызван nextQuestion, текущий индекс:', this.state.currentQuestionIndex)
     const selectedAnswer = this.state.userAnswers[this.state.currentQuestionIndex]
 
     // Проверяем, что вопрос отвечен
@@ -386,11 +390,13 @@ export class TestApp {
 
     if (this.state.currentQuestionIndex < this.questions.length - 1) {
       this.state.currentQuestionIndex++
+      console.log('Переход к следующему вопросу, новый индекс:', this.state.currentQuestionIndex)
       this.saveState()
       this.render()
       // Обновляем прогресс-бар после рендера с небольшой задержкой
       setTimeout(() => this.updateProgressBar(), 100)
     } else {
+      console.log('Показываем результаты')
       this.showResults()
     }
   }
@@ -524,6 +530,7 @@ export class TestApp {
   }
 
   private restartTest(): void {
+    console.log('Вызван restartTest - возвращаемся в welcome экран')
     this.state.currentQuestionIndex = 0
     this.state.userAnswers = []
     this.state.currentScreen = 'welcome'
@@ -593,8 +600,14 @@ export class TestApp {
       const totalSteps = this.questions.length
       const progressPercent = (currentStep / totalSteps) * 100
 
+      console.log('Обновление прогресс-бара:', progressPercent + '%')
+      console.log('Элемент найден:', progressBar)
       // Устанавливаем ширину
       progressBar.style.width = `${progressPercent}%`
+      console.log('Ширина установлена:', progressBar.style.width)
+    } else {
+      console.log('Прогресс-бар не найден!')
+      console.log('Все элементы с классом progress-bar:', document.querySelectorAll('.progress-bar'))
     }
   }
 }
