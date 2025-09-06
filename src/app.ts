@@ -1,5 +1,5 @@
-import type { SupabaseClient, User } from '@supabase/supabase-js'
-import type { TestQuestion, AppState, ScreenType, QuestionResult, TestResult } from './types'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type { TestQuestion, AppState, QuestionResult, TestResult } from './types'
 
 export class TestApp {
   private questions: TestQuestion[]
@@ -438,7 +438,7 @@ export class TestApp {
     const password = passwordInput.value
 
     try {
-      const { data, error } = await this.supabase.auth.signUp({
+      const { error } = await this.supabase.auth.signUp({
         email,
         password
       })
@@ -476,7 +476,7 @@ export class TestApp {
 
   private async loginWithGoogle(): Promise<void> {
     try {
-      const { data, error } = await this.supabase.auth.signInWithOAuth({
+      const { error } = await this.supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: window.location.origin
