@@ -351,9 +351,13 @@ export class TestApp {
       } else if (target.id === 'theme-toggle-btn') {
         this.toggleTheme()
       } else if (target.id === 'back-to-dashboard-btn') {
-        console.log('Нажата кнопка назад из результатов, target:', target)
-        console.log('Текущий экран:', this.state.currentScreen)
-        this.restartTest()
+        if (this.state.currentUser) {
+          // Авторизованный пользователь - в личный кабинет
+          this.backToDashboard()
+        } else {
+          // Неавторизованный пользователь - на начало теста
+          this.restartTest()
+        }
       } else if (target.id === 'google-login-btn') {
         this.loginWithGoogle()
       } else if (target.classList.contains('answer-option')) {
@@ -477,6 +481,20 @@ export class TestApp {
 
   private viewResults(): void {
     this.state.currentScreen = 'results'
+    this.render()
+  }
+
+  private async backToDashboard(): Promise<void> {
+    // Проверяем и восстанавливаем сессию пользователя
+    try {
+      const { data: { session } } = await this.supabase.auth.getSession()
+      this.state.currentUser = session?.user || null
+    } catch (error) {
+      console.error('Error getting session in backToDashboard:', error)
+      this.state.currentUser = null
+    }
+
+    this.state.currentScreen = 'dashboard'
     this.render()
   }
 
