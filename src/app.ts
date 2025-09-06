@@ -227,7 +227,7 @@ export class TestApp {
                 </svg>
                 Войти через Яндекс
               </button>
-              <p class="yandex-hint">Быстрый вход с помощью Яндекс аккаунта</p>
+              <p class="yandex-hint">Всегда выбирайте аккаунт Яндекс</p>
             </div>
           </div>
         </div>
@@ -295,7 +295,6 @@ export class TestApp {
               </div>
             `}
             <p>${this.getUserGreeting()}</p>
-            <p>Email: ${this.state.currentUser?.email || ''}</p>
             <div class="balance-info">
               <span class="balance-label">Баланс:</span>
               <span class="balance-amount" id="user-balance">Загрузка...</span>
@@ -819,12 +818,33 @@ export class TestApp {
       if (error) throw error
       }
 
+      // Очищаем данные Yandex из localStorage
+      const keysToRemove = []
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key && key.startsWith('yandex_user_')) {
+          keysToRemove.push(key)
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key))
+
       // В любом случае очищаем локальное состояние
       this.state.currentUser = null
       this.state.currentScreen = 'welcome'
       this.render()
     } catch (error) {
       console.warn('Ошибка при выходе:', error)
+
+      // Очищаем данные Yandex из localStorage даже при ошибке
+      const keysToRemove = []
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key && key.startsWith('yandex_user_')) {
+          keysToRemove.push(key)
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key))
+
       // Даже если вышла ошибка, очищаем локальное состояние
       this.state.currentUser = null
       this.state.currentScreen = 'welcome'
@@ -1013,15 +1033,53 @@ export class TestApp {
       const password = Math.random().toString(36) + Math.random().toString(36) // Случайный пароль
 
       try {
-        // Сначала пытаемся войти с существующим email и паролем (для уже зарегистрированных пользователей)
-        const { error: existingSignInError } = await this.supabase.auth.signInWithPassword({
-          email: email,
-          password: password
-        })
+        // Проверяем, есть ли уже пользователь с таким Yandex ID в localStorage
+        const yandexUserKey = `yandex_user_${userData.id}`
+        const existingUserData = localStorage.getItem(yandexUserKey)
 
-        if (existingSignInError) {
-          // Пользователь не найден или пароль неверный, создаем нового
-          console.log('Создаем нового пользователя для Yandex авторизации')
+        let existingUser = null
+        let existingPassword = null
+
+        if (existingUserData) {
+          try {
+            const parsed = JSON.parse(existingUserData)
+            existingUser = parsed
+            existingPassword = parsed.password
+            console.log('Найден существующий пользователь в localStorage:', existingUser.email)
+          } catch (e) {
+            console.warn('Ошибка парсинга данных пользователя из localStorage')
+          }
+        }
+
+        if (existingUser && existingPassword) {
+          // Пытаемся войти под существующим пользователем
+          console.log('Пытаемся войти под существующим пользователем')
+          const { error: existingSignInError } = await this.supabase.auth.signInWithPassword({
+            email: existingUser.email,
+            password: existingPassword
+          })
+
+          if (!existingSignInError) {
+            console.log('Успешный вход под существующим пользователем')
+            // Обновляем метаданные пользователя
+            await this.supabase.auth.updateUser({
+              data: {
+                yandex_id: userData.id,
+                first_name: firstName,
+                last_name: lastName,
+                display_name: userName,
+                avatar_url: userData.default_avatar_id ? `https://avatars.yandex.net/get-yapic/${userData.default_avatar_id}/islands-200` : null,
+                provider: 'yandex'
+              }
+            })
+            return // Выходим из функции, вход успешен
+          } else {
+            console.warn('Не удалось войти под существующим пользователем:', existingSignInError.message)
+          }
+        }
+
+        // Если существующего пользователя нет или вход не удался, создаем нового
+        console.log('Создаем нового пользователя для Yandex авторизации')
 
           const { error: signUpError } = await this.supabase.auth.signUp({
             email: email,
@@ -1063,6 +1121,15 @@ export class TestApp {
 
               if (altSignUpError) throw altSignUpError
 
+              // Сохраняем данные пользователя в localStorage
+              const userDataToStore = {
+                email: uniqueEmail,
+                password: uniquePassword,
+                yandexId: userData.id,
+                createdAt: Date.now()
+              }
+              localStorage.setItem(yandexUserKey, JSON.stringify(userDataToStore))
+
               // Входим под новым пользователем
               const { error: altSignInError } = await this.supabase.auth.signInWithPassword({
                 email: uniqueEmail,
@@ -1092,6 +1159,16 @@ export class TestApp {
 
                 if (!signInError) {
                   console.log('Успешный вход после регистрации')
+
+                  // Сохраняем данные пользователя в localStorage для будущих входов
+                  const userDataToStore = {
+                    email: email,
+                    password: password,
+                    yandexId: userData.id,
+                    createdAt: Date.now()
+                  }
+                  localStorage.setItem(yandexUserKey, JSON.stringify(userDataToStore))
+
                   break
                 }
 
@@ -1131,6 +1208,15 @@ export class TestApp {
               })
 
               if (finalSignUpError) throw finalSignUpError
+
+              // Сохраняем данные пользователя в localStorage
+              const finalUserDataToStore = {
+                email: uniqueEmail,
+                password: uniquePassword,
+                yandexId: userData.id,
+                createdAt: Date.now()
+              }
+              localStorage.setItem(yandexUserKey, JSON.stringify(finalUserDataToStore))
 
               // Входим под новым пользователем
               const { error: finalSignInError } = await this.supabase.auth.signInWithPassword({
@@ -1591,8 +1677,8 @@ export class TestApp {
       authUrl.searchParams.set('response_type', 'code')
       authUrl.searchParams.set('scope', YANDEX_CONFIG.scope)
       authUrl.searchParams.set('state', state)
-      // Яндекс OAuth автоматически позволяет выбрать аккаунт при необходимости
-      // Не требуется дополнительных параметров
+      // Всегда показывать выбор аккаунта
+      authUrl.searchParams.set('prompt', 'select_account')
 
       // Перенаправляем пользователя на Yandex для авторизации
       window.location.href = authUrl.toString()
