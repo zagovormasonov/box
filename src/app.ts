@@ -389,6 +389,7 @@ export class TestApp {
       this.saveState()
       this.render()
       // Обновляем прогресс-бар после рендера с небольшой задержкой
+      console.log('Вызываем updateProgressBar из nextQuestion')
       setTimeout(() => this.updateProgressBar(), 100)
     } else {
       this.showResults()
@@ -473,7 +474,16 @@ export class TestApp {
     this.render()
   }
 
-  private backToDashboard(): void {
+  private async backToDashboard(): Promise<void> {
+    // Проверяем и восстанавливаем сессию пользователя
+    try {
+      const { data: { session } } = await this.supabase.auth.getSession()
+      this.state.currentUser = session?.user || null
+    } catch (error) {
+      console.error('Error getting session in backToDashboard:', error)
+      this.state.currentUser = null
+    }
+
     this.state.currentScreen = 'dashboard'
     this.render()
   }
@@ -601,7 +611,9 @@ export class TestApp {
       progressBar.style.setProperty('width', `${progressPercent}%`, 'important')
       progressBar.style.setProperty('transition', 'width 0.8s ease', 'important')
 
-      console.log('Прогресс-бар обновлён:', progressPercent + '%')
+      console.log('Прогресс-бар обновлён:', progressPercent + '%', 'Элемент:', progressBar)
+    } else {
+      console.log('Прогресс-бар не найден!')
     }
   }
 }
