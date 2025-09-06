@@ -995,14 +995,14 @@ export class TestApp {
 
       try {
         // Сначала пытаемся войти с существующим email
-        const { data: signInData, error: signInError } = await this.supabase.auth.signInWithPassword({
+        const { error: signInError } = await this.supabase.auth.signInWithPassword({
           email: email,
           password: password
         })
 
         if (signInError && signInError.message.includes('Invalid login credentials')) {
           // Пользователь не существует, создаем нового
-          const { data: authData, error: signUpError } = await this.supabase.auth.signUp({
+          const { error: signUpError } = await this.supabase.auth.signUp({
             email: email,
             password: password,
             options: {
@@ -1032,7 +1032,7 @@ export class TestApp {
         // Если возникла ошибка, попробуем другой подход - создаем уникальный email
         const uniqueEmail = `yandex_${userData.id}_${Date.now()}@yandex.com`
 
-        const { data: authData, error: signUpError } = await this.supabase.auth.signUp({
+        const { error: signUpError } = await this.supabase.auth.signUp({
           email: uniqueEmail,
           password: password,
           options: {
