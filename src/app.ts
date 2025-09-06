@@ -1127,10 +1127,19 @@ export class TestApp {
       const currentStep = this.state.currentQuestionIndex + 1
       const totalSteps = this.questions.length
       const progressPercent = (currentStep / totalSteps) * 100
+      const containerWidth = 400 // Фиксированная ширина контейнера
+      const pixelWidth = (progressPercent / 100) * containerWidth
 
-      console.log(`Прогресс: шаг ${currentStep}/${totalSteps} = ${progressPercent}%`)
+      console.log(`Прогресс: шаг ${currentStep}/${totalSteps} = ${progressPercent}% (${pixelWidth}px)`)
 
-      progressFill.style.width = `${progressPercent}%`
+      progressFill.style.width = `${pixelWidth}px`
+
+      // Гарантируем, что контейнер имеет правильную ширину
+      const container = this.appElement.querySelector('.progress-container') as HTMLElement
+      if (container) {
+        container.style.width = '400px'
+        container.style.minWidth = '200px'
+      }
       console.log('Ширина установлена:', progressFill.style.width)
       console.log('Значение progressPercent:', progressPercent)
 

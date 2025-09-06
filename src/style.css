@@ -487,12 +487,14 @@ header h1 {
 
 .progress-container {
   width: 100%;
+  min-width: 200px; /* Минимальная ширина для корректного расчета процентов */
   height: 12px;
   background-color: #e5e7eb;
   border-radius: 6px;
   overflow: hidden;
   margin-bottom: 1rem;
   position: relative;
+  box-sizing: border-box;
 }
 
 .dark-mode .progress-container {
