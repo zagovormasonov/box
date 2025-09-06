@@ -473,19 +473,6 @@ export class TestApp {
     this.render()
   }
 
-  private async backToDashboard(): Promise<void> {
-    // Проверяем и восстанавливаем сессию пользователя
-    try {
-      const { data: { session } } = await this.supabase.auth.getSession()
-      this.state.currentUser = session?.user || null
-    } catch (error) {
-      console.error('Error getting session in backToDashboard:', error)
-      this.state.currentUser = null
-    }
-
-    this.state.currentScreen = 'dashboard'
-    this.render()
-  }
 
   private async loginWithGoogle(): Promise<void> {
     try {
