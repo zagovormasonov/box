@@ -669,13 +669,13 @@ export class TestApp {
         Email: paymentData.email,
         SuccessURL: TINKOFF_CONFIG.successUrl,
         FailURL: TINKOFF_CONFIG.failUrl,
-        NotificationURL: TINKOFF_CONFIG.notificationUrl,
-        // Для СБП добавляем специальные параметры
-        ...(paymentData.paymentMethod === 'sbp' && {
-          DATA: {
-            sbp: 'true'
-          }
-        })
+        NotificationURL: TINKOFF_CONFIG.notificationUrl
+      }
+
+      // Для СБП используем правильный параметр PaymentMethod
+      if (paymentData.paymentMethod === 'sbp') {
+        tinkoffPaymentData.PaymentMethod = 'SBP'
+        console.log('Настройка оплаты через СБП')
       }
 
       // Генерируем подпись
@@ -698,10 +698,18 @@ export class TestApp {
 
       if (result.Success) {
         // Перенаправляем пользователя на страницу оплаты
+        console.log('Успешно создана ссылка на оплату:', result.PaymentURL)
+        alert(`Перенаправляем вас на страницу оплаты Тинькофф...
+
+Метод оплаты: ${paymentData.paymentMethod === 'sbp' ? 'СБП (QR-код)' : 'Банковская карта'}
+Сумма: ${paymentData.amount / 100}₽`)
+
         window.location.href = result.PaymentURL
       } else {
         console.error('Ошибка Тинькофф:', result.Message)
-        alert(`Ошибка оплаты: ${result.Message}`)
+        alert(`Ошибка оплаты: ${result.Message}
+
+Если проблема с СБП, попробуйте оплатить банковской картой.`)
       }
 
     } catch (error) {
