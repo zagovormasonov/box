@@ -370,6 +370,18 @@ header h1 {
   flex-shrink: 0;
 }
 
+.google-hint {
+  margin: 0.5rem 0 0 0;
+  font-size: 0.85rem;
+  color: #6b7280;
+  text-align: center;
+  transition: color 0.2s ease;
+}
+
+.dark-mode .google-hint {
+  color: #9ca3af;
+}
+
 .results-content {
   text-align: center;
 }
