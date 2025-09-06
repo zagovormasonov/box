@@ -461,6 +461,7 @@ export class TestApp {
 
       // Рендерим интерфейс
       this.render()
+      console.log('Интерфейс перерендерен в nextQuestion, вызываем updateProgress')
 
       // Обновляем прогресс-бар
       this.updateProgress()
@@ -1090,13 +1091,29 @@ export class TestApp {
   }
 
   private updateProgress(): void {
+    console.log('updateProgress вызвана')
     const progressFill = this.appElement.querySelector('#progress-fill') as HTMLElement
+    console.log('Элемент #progress-fill найден:', !!progressFill)
+
     if (progressFill) {
       const currentStep = this.state.currentQuestionIndex + 1
       const totalSteps = this.questions.length
       const progressPercent = (currentStep / totalSteps) * 100
 
+      console.log(`Прогресс: шаг ${currentStep}/${totalSteps} = ${progressPercent}%`)
+
       progressFill.style.width = `${progressPercent}%`
+      console.log('Ширина установлена:', progressFill.style.width)
+
+      // Проверяем computed style
+      setTimeout(() => {
+        console.log('Computed width:', getComputedStyle(progressFill).width)
+      }, 100)
+    } else {
+      console.error('Элемент #progress-fill не найден!')
+      // Показываем все элементы с классом progress-fill
+      const allProgress = this.appElement.querySelectorAll('.progress-fill')
+      console.log('Найдено элементов .progress-fill:', allProgress.length)
     }
   }
 }

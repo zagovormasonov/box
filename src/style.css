@@ -493,6 +493,7 @@ header h1 {
   overflow: hidden;
   margin-bottom: 1rem;
   position: relative;
+  border: 2px solid #00ff00; /* Зеленая рамка для видимости контейнера */
 }
 
 .dark-mode .progress-container {
@@ -501,11 +502,12 @@ header h1 {
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%);
+  background: linear-gradient(90deg, #ff0000 0%, #ff4444 100%); /* Ярко-красный для видимости */
   border-radius: 6px;
   width: 0%;
   transition: width 0.3s ease;
   position: relative;
+  border: 2px solid #000000; /* Черная рамка для видимости */
 }
 
 .dark-mode .progress-fill {
