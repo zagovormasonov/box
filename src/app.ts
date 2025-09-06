@@ -227,7 +227,7 @@ export class TestApp {
                 </svg>
                 Войти через Яндекс
               </button>
-              <p class="yandex-hint">Быстрый вход с помощью Яндекс аккаунта</p>
+              <p class="yandex-hint">Вы сможете выбрать нужный Яндекс аккаунт</p>
             </div>
           </div>
         </div>
@@ -287,14 +287,14 @@ export class TestApp {
               <div class="user-avatar">
                 <img src="${this.state.currentUser.user_metadata.avatar_url}"
                      alt="Аватар пользователя"
-                     onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\\'avatar-placeholder\\'>${(this.state.currentUser.email || '').charAt(0).toUpperCase()}</div>'" />
+                     onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\\'avatar-placeholder\\'>${this.getUserInitials()}</div>'" />
               </div>
-            ` : this.state.currentUser?.email ? `
+            ` : `
               <div class="user-avatar">
-                <div class="avatar-placeholder">${this.state.currentUser.email.charAt(0).toUpperCase()}</div>
+                <div class="avatar-placeholder">${this.getUserInitials()}</div>
               </div>
-            ` : ''}
-            <p>Добро пожаловать!</p>
+            `}
+            <p>${this.getUserGreeting()}</p>
             <p>Email: ${this.state.currentUser?.email || ''}</p>
             <div class="balance-info">
               <span class="balance-label">Баланс:</span>
@@ -988,6 +988,7 @@ export class TestApp {
       }
 
       console.log('Yandex user data:', userData)
+      console.log('User fields - first_name:', userData.first_name, 'last_name:', userData.last_name, 'default_email:', userData.default_email)
 
       // Создаем пользователя в Supabase
       const email = userData.default_email || `yandex_${userData.id}@yandex.com`
@@ -1569,6 +1570,7 @@ export class TestApp {
       authUrl.searchParams.set('response_type', 'code')
       authUrl.searchParams.set('scope', YANDEX_CONFIG.scope)
       authUrl.searchParams.set('state', state)
+      authUrl.searchParams.set('prompt', 'select_account') // Позволяет выбрать аккаунт
 
       // Перенаправляем пользователя на Yandex для авторизации
       window.location.href = authUrl.toString()
@@ -1681,6 +1683,64 @@ export class TestApp {
       const progressPercent = (currentStep / totalSteps) * 100
       progressFill.style.width = `${progressPercent}%`
     }
+  }
+
+  private getUserGreeting(): string {
+    if (!this.state.currentUser) {
+      return 'Добро пожаловать!'
+    }
+
+    const metadata = this.state.currentUser.user_metadata
+
+    // Проверяем, есть ли имя пользователя из OAuth провайдеров
+    if (metadata) {
+      const firstName = metadata.first_name || metadata.given_name
+      const lastName = metadata.last_name || metadata.family_name
+
+      if (firstName || lastName) {
+        const fullName = [firstName, lastName].filter(Boolean).join(' ')
+        return `Добро пожаловать, ${fullName}!`
+      }
+    }
+
+    // Если имени нет, используем email
+    const email = this.state.currentUser.email
+    if (email) {
+      const username = email.split('@')[0]
+      return `Добро пожаловать, ${username}!`
+    }
+
+    return 'Добро пожаловать!'
+  }
+
+  private getUserInitials(): string {
+    if (!this.state.currentUser) {
+      return '?'
+    }
+
+    const metadata = this.state.currentUser.user_metadata
+
+    // Проверяем, есть ли имя пользователя из OAuth провайдеров
+    if (metadata) {
+      const firstName = metadata.first_name || metadata.given_name
+      const lastName = metadata.last_name || metadata.family_name
+
+      if (firstName && lastName) {
+        return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase()
+      } else if (firstName) {
+        return firstName.charAt(0).toUpperCase()
+      } else if (lastName) {
+        return lastName.charAt(0).toUpperCase()
+      }
+    }
+
+    // Если имени нет, используем email
+    const email = this.state.currentUser.email
+    if (email) {
+      return email.charAt(0).toUpperCase()
+    }
+
+    return '?'
   }
 
 }
