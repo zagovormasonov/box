@@ -411,11 +411,16 @@ export class TestApp {
   }
 
   private startTest(): void {
+    console.log('startTest: начинаем тест')
     this.state.currentQuestionIndex = 0
     this.state.userAnswers = []
     this.state.currentScreen = 'test'
     this.saveState()
     this.render()
+
+    // Обновляем видимость экранов
+    this.updateScreenVisibility()
+    console.log('Экраны переключены на test-screen')
 
     // Инициализируем прогресс-бар
     setTimeout(() => {
@@ -474,6 +479,10 @@ export class TestApp {
       // Рендерим интерфейс
       this.render()
       console.log('Интерфейс перерендерен в nextQuestion')
+
+      // Обновляем видимость экранов
+      this.updateScreenVisibility()
+      console.log('Видимость экранов обновлена')
 
       // Проверяем элемент после рендера
       setTimeout(() => {
