@@ -144,6 +144,7 @@ export class TestApp {
     const question = this.questions[this.state.currentQuestionIndex]
     const selectedAnswer = this.state.userAnswers[this.state.currentQuestionIndex]
     const isAnswered = selectedAnswer !== undefined
+    console.log(`renderTestScreen: вопрос ${this.state.currentQuestionIndex}, selectedAnswer: ${selectedAnswer}, isAnswered: ${isAnswered}`)
 
     const currentStep = this.state.currentQuestionIndex + 1
     const totalSteps = this.questions.length
@@ -442,6 +443,15 @@ export class TestApp {
         element.classList.remove('selected')
       }
     })
+
+    // Обновляем состояние кнопки "Далее"
+    const nextBtn = this.appElement.querySelector('#next-btn') as HTMLButtonElement
+    if (nextBtn) {
+      const selectedAnswer = this.state.userAnswers[this.state.currentQuestionIndex]
+      const isAnswered = selectedAnswer !== undefined
+      nextBtn.disabled = !isAnswered
+      console.log('Кнопка Далее обновлена, disabled:', !isAnswered)
+    }
   }
 
   private nextQuestion(): void {
