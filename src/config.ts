@@ -60,28 +60,24 @@ export interface PaymentRecord {
   order_id: string;
 }
 
-
-// Конфигурация Yandex OAuth
-export const YANDEX_CONFIG = {
-  // Получите эти ключи на https://oauth.yandex.ru/
-  // 1. Создайте приложение в Yandex OAuth
-  // 2. Выберите платформу "Веб-сервисы"
-  // 3. Укажите Callback URL
-  // 4. Скопируйте Client ID и Client Secret
-  clientId: '525d1a0db07f44488b1216e4d3ee99c9',
-  clientSecret: '3da077bc326a4813addaf6075ce4f79a',
+// Конфигурация VK OAuth
+export const VK_CONFIG = {
+  // Получите эти ключи на https://vk.com/dev
+  // 1. Создайте Standalone приложение
+  // 2. Перейдите в Настройки -> Ключи доступа
+  // 3. Скопируйте App ID и Защищенный ключ
+  appId: 'YOUR_VK_APP_ID',
+  appSecret: 'YOUR_VK_APP_SECRET',
 
   // URL для перенаправления после авторизации
-  // Добавьте этот URL в настройках Yandex приложения
-  redirectUri: `${window.location.origin}/auth/yandex/callback`,
+  // Добавьте этот URL в настройках VK приложения: https://vk.com/dev -> Ваше приложение -> Настройки -> Авторизация
+  redirectUri: `${window.location.origin}/auth/vk/callback`,
 
   // Запрашиваемые разрешения
-  scope: 'login:email login:avatar',
+  scope: 'email,photos',
 
-  // URL Yandex OAuth
-  authUrl: 'https://oauth.yandex.ru/authorize',
-  tokenUrl: 'https://oauth.yandex.ru/token',
-  apiUrl: 'https://login.yandex.ru/info'
+  // Версия API VK
+  apiVersion: '5.199'
 };
 
 // Типы для Supabase

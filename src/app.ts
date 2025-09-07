@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { TestQuestion, AppState, QuestionResult, TestResult } from './types'
 import type { PaymentData, SharedTestResult } from './config'
-import { TINKOFF_CONFIG, YANDEX_CONFIG } from './config'
+import { TINKOFF_CONFIG, VK_CONFIG } from './config'
 
 export class TestApp {
   private questions: TestQuestion[]
@@ -43,8 +43,8 @@ export class TestApp {
     // Обрабатываем URL параметры для просмотра чужих результатов
     await this.handleShareUrl()
 
-    // Обрабатываем Yandex OAuth callback
-    await this.handleYandexCallback()
+    // Обрабатываем VK OAuth callback
+    await this.handleVKCallback()
 
     // Затем рендерим интерфейс и настраиваем обработчики
     this.render()
@@ -219,15 +219,14 @@ export class TestApp {
               <p class="google-hint">Вы сможете выбрать нужный аккаунт Google</p>
             </div>
 
-            <div class="yandex-auth">
-              <button id="yandex-login-btn" class="btn yandex-btn">
+            <div class="vk-auth">
+              <button id="vk-login-btn" class="btn vk-btn">
                 <svg width="18" height="18" viewBox="0 0 24 24">
-                  <path fill="#FF0000" d="M13.5 0C19.5 0 24 4.5 24 10.5c0 6-4.5 10.5-10.5 10.5S3 16.5 3 10.5C3 4.5 7.5 0 13.5 0z"/>
-                  <path fill="#FFFFFF" d="M13.5 4.5c-1.1 0-2 .9-2 2v1.5h4V6.5c0-1.1-.9-2-2-2zM10.5 9h6v1.5h-6V9zM10.5 12h6v1.5h-6V12z"/>
+                  <path fill="#0077FF" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm3.5 14.5h-1.3c-.8 0-1-.4-1-1.1v-3.1c0-.7-.4-1.1-1-1.1h-.9v-1.3h.9c1.1 0 1.9-.8 1.9-1.9V8.5h1.3v1.4c0 .8.4 1.1 1 1.1h.9V12h-.9c-.7 0-1.1.4-1.1 1.1v3.1c0 1.1-.8 1.9-1.9 1.9z"/>
                 </svg>
-                Войти через Яндекс
+                Войти через VK
               </button>
-              <p class="yandex-hint">Быстрый вход с помощью Яндекс аккаунта</p>
+              <p class="vk-hint">Быстрый вход с помощью VK аккаунта</p>
             </div>
           </div>
         </div>
@@ -455,8 +454,8 @@ export class TestApp {
         }
       } else if (target.id === 'google-login-btn') {
         this.loginWithGoogle()
-      } else if (target.id === 'yandex-login-btn') {
-        this.loginWithYandex()
+      } else if (target.id === 'vk-login-btn') {
+        this.loginWithVK()
       } else if (target.id === 'back-to-welcome-btn') {
         this.state.currentScreen = 'welcome'
         this.saveState()
@@ -911,11 +910,11 @@ export class TestApp {
     }
   }
 
-  private async handleYandexCallback(): Promise<void> {
+  private async handleVKCallback(): Promise<void> {
     const urlParams = new URLSearchParams(window.location.search)
 
-    // Проверяем, что мы на странице Yandex callback
-    if (!window.location.pathname.includes('/auth/yandex/callback')) {
+    // Проверяем, что мы на странице VK callback
+    if (!window.location.pathname.includes('/auth/vk/callback')) {
       return
     }
 
@@ -923,24 +922,24 @@ export class TestApp {
     const state = urlParams.get('state')
     const error = urlParams.get('error')
 
-    // Проверяем ошибки Yandex
+    // Проверяем ошибки VK
     if (error) {
-      console.error('Yandex OAuth error:', error)
-      alert('Ошибка авторизации через Яндекс: ' + error)
+      console.error('VK OAuth error:', error)
+      alert('Ошибка авторизации через VK: ' + error)
       window.location.href = window.location.origin
       return
     }
 
     // Проверяем наличие кода авторизации
     if (!code) {
-      console.error('No authorization code received from Yandex')
-      alert('Ошибка: не получен код авторизации от Яндекс')
+      console.error('No authorization code received from VK')
+      alert('Ошибка: не получен код авторизации от VK')
       window.location.href = window.location.origin
       return
     }
 
     // Проверяем состояние для защиты от CSRF
-    const savedState = localStorage.getItem('yandex_oauth_state')
+    const savedState = localStorage.getItem('vk_oauth_state')
     if (!state || state !== savedState) {
       console.error('Invalid state parameter')
       alert('Ошибка безопасности: недействительный параметр состояния')
@@ -949,226 +948,123 @@ export class TestApp {
     }
 
     // Очищаем сохраненное состояние
-    localStorage.removeItem('yandex_oauth_state')
+    localStorage.removeItem('vk_oauth_state')
 
     try {
       // Обмениваем код на access token
-      const tokenResponse = await fetch(YANDEX_CONFIG.tokenUrl, {
+      const tokenResponse = await fetch('https://oauth.vk.com/access_token', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
         },
         body: new URLSearchParams({
-          grant_type: 'authorization_code',
-          code: code,
-          client_id: YANDEX_CONFIG.clientId,
-          client_secret: YANDEX_CONFIG.clientSecret
+          client_id: VK_CONFIG.appId,
+          client_secret: VK_CONFIG.appSecret,
+          redirect_uri: VK_CONFIG.redirectUri,
+          code: code
         })
       })
 
       const tokenData = await tokenResponse.json()
 
       if (!tokenResponse.ok) {
-        throw new Error(`Yandex API error: ${tokenData.error_description || tokenData.error}`)
+        throw new Error(`VK API error: ${tokenData.error_description || tokenData.error}`)
       }
 
-      console.log('Yandex token response:', tokenData)
+      console.log('VK token response:', tokenData)
 
       // Получаем данные пользователя
-      const userResponse = await fetch(YANDEX_CONFIG.apiUrl, {
-        headers: {
-          'Authorization': `OAuth ${tokenData.access_token}`
-        }
-      })
+      const userResponse = await fetch(
+        `https://api.vk.com/method/users.get?user_ids=${tokenData.user_id}&fields=photo_200,email&v=${VK_CONFIG.apiVersion}&access_token=${tokenData.access_token}`
+      )
 
       const userData = await userResponse.json()
 
-      if (!userResponse.ok) {
-        throw new Error('Failed to get user data from Yandex')
+      if (!userResponse.ok || userData.error) {
+        throw new Error(`VK API error: ${userData.error?.error_msg || 'Failed to get user data'}`)
       }
 
-      console.log('Yandex user data:', userData)
+      console.log('VK user data:', userData)
+
+      const vkUser = userData.response[0]
 
       // Создаем пользователя в Supabase
-      const email = userData.default_email || `yandex_${userData.id}@yandex.com`
+      const email = tokenData.email || `vk_${vkUser.id}@vk.com`
       const password = Math.random().toString(36) + Math.random().toString(36) // Случайный пароль
 
       try {
-        // Сначала пытаемся войти с существующим email и паролем (для уже зарегистрированных пользователей)
-        const { error: existingSignInError } = await this.supabase.auth.signInWithPassword({
+        // Сначала пытаемся войти с существующим email
+        const { data: signInData, error: signInError } = await this.supabase.auth.signInWithPassword({
           email: email,
           password: password
         })
 
-        if (existingSignInError) {
-          // Пользователь не найден или пароль неверный, создаем нового
-          console.log('Создаем нового пользователя для Yandex авторизации')
-
-          const { data: signUpData, error: signUpError } = await this.supabase.auth.signUp({
+        if (signInError && signInError.message.includes('Invalid login credentials')) {
+          // Пользователь не существует, создаем нового
+          const { data: authData, error: signUpError } = await this.supabase.auth.signUp({
             email: email,
             password: password,
             options: {
               data: {
-                yandex_id: userData.id,
-                first_name: userData.first_name,
-                last_name: userData.last_name,
-                avatar_url: userData.default_avatar_id ? `https://avatars.yandex.net/get-yapic/${userData.default_avatar_id}/islands-200` : null,
-                provider: 'yandex'
+                vk_id: vkUser.id.toString(),
+                first_name: vkUser.first_name,
+                last_name: vkUser.last_name,
+                avatar_url: vkUser.photo_200,
+                provider: 'vk'
               }
             }
           })
 
-          if (signUpError) {
-            if (signUpError.message.includes('already registered')) {
-              // Пользователь уже существует, создаем пользователя с уникальным email
-              console.log('Пользователь уже существует, создаем с уникальным email')
+          if (signUpError) throw signUpError
 
-              const uniqueEmail = `yandex_${userData.id}_${Date.now()}@yandex.com`
-              const uniquePassword = Math.random().toString(36) + Math.random().toString(36)
-
-              const { data: altSignUpData, error: altSignUpError } = await this.supabase.auth.signUp({
-                email: uniqueEmail,
-                password: uniquePassword,
-                options: {
-                  data: {
-                    yandex_id: userData.id,
-                    first_name: userData.first_name,
-                    last_name: userData.last_name,
-                    avatar_url: userData.default_avatar_id ? `https://avatars.yandex.net/get-yapic/${userData.default_avatar_id}/islands-200` : null,
-                    provider: 'yandex'
-                  }
-                }
-              })
-
-              if (altSignUpError) throw altSignUpError
-
-              // Входим под новым пользователем
-              const { error: altSignInError } = await this.supabase.auth.signInWithPassword({
-                email: uniqueEmail,
-                password: uniquePassword
-              })
-
-              if (altSignInError) throw altSignInError
-
-            } else {
-              throw signUpError
-            }
-          } else if (signUpData?.user) {
-            // Новый пользователь создан успешно
-            console.log('Новый пользователь создан:', signUpData.user.email)
-
-            // Для новых пользователей в Supabase может потребоваться подтверждение email
-            // Пробуем войти с повторными попытками
-            let signInAttempts = 0
-            const maxAttempts = 3
-
-            while (signInAttempts < maxAttempts) {
-              try {
-                const { error: signInError } = await this.supabase.auth.signInWithPassword({
-                  email: email,
-                  password: password
-                })
-
-                if (!signInError) {
-                  console.log('Успешный вход после регистрации')
-                  break
-                }
-
-                signInAttempts++
-                console.warn(`Попытка входа ${signInAttempts} не удалась:`, signInError?.message)
-
-                if (signInAttempts < maxAttempts) {
-                  // Ждем перед следующей попыткой
-                  await new Promise(resolve => setTimeout(resolve, 2000))
-                }
-              } catch (error) {
-                signInAttempts++
-                console.error(`Ошибка при попытке входа ${signInAttempts}:`, error)
-              }
-            }
-
-            // Если все попытки входа не удались
-            if (signInAttempts >= maxAttempts) {
-              console.warn('Все попытки входа не удались, создаем пользователя с уникальным email')
-
-              const uniqueEmail = `yandex_${userData.id}_${Date.now()}@yandex.com`
-              const uniquePassword = Math.random().toString(36) + Math.random().toString(36)
-
-              const { error: finalSignUpError } = await this.supabase.auth.signUp({
-                email: uniqueEmail,
-                password: uniquePassword,
-                options: {
-                  data: {
-                    yandex_id: userData.id,
-                    first_name: userData.first_name,
-                    last_name: userData.last_name,
-                    avatar_url: userData.default_avatar_id ? `https://avatars.yandex.net/get-yapic/${userData.default_avatar_id}/islands-200` : null,
-                    provider: 'yandex'
-                  }
-                }
-              })
-
-              if (finalSignUpError) throw finalSignUpError
-
-              // Входим под новым пользователем
-              const { error: finalSignInError } = await this.supabase.auth.signInWithPassword({
-                email: uniqueEmail,
-                password: uniquePassword
-              })
-
-              if (finalSignInError) throw finalSignInError
-            }
-          }
-        } else {
-          // Успешный вход существующего пользователя
-          console.log('Вход выполнен для существующего пользователя')
-
-          // Обновляем метаданные пользователя
-          await this.supabase.auth.updateUser({
-            data: {
-              yandex_id: userData.id,
-              first_name: userData.first_name,
-              last_name: userData.last_name,
-              avatar_url: userData.default_avatar_id ? `https://avatars.yandex.net/get-yapic/${userData.default_avatar_id}/islands-200` : null,
-              provider: 'yandex'
-            }
+          // Теперь пытаемся войти вновь
+          const { error: finalSignInError } = await this.supabase.auth.signInWithPassword({
+            email: email,
+            password: password
           })
+
+          if (finalSignInError) throw finalSignInError
+        } else if (signInError) {
+          throw signInError
         }
       } catch (error) {
-        console.error('Ошибка авторизации через Yandex:', error)
-        throw error
+        // Если возникла ошибка, попробуем другой подход - создаем уникальный email
+        const uniqueEmail = `vk_${vkUser.id}_${Date.now()}@vk.com`
+
+        const { data: authData, error: signUpError } = await this.supabase.auth.signUp({
+          email: uniqueEmail,
+          password: password,
+          options: {
+            data: {
+              vk_id: vkUser.id.toString(),
+              first_name: vkUser.first_name,
+              last_name: vkUser.last_name,
+              avatar_url: vkUser.photo_200,
+              provider: 'vk'
+            }
+          }
+        })
+
+        if (signUpError) throw signUpError
+
+        // Входим под новым пользователем
+        const { error: finalSignInError } = await this.supabase.auth.signInWithPassword({
+          email: uniqueEmail,
+          password: password
+        })
+
+        if (finalSignInError) throw finalSignInError
       }
 
       // Перенаправляем на основную страницу
       window.location.href = window.location.origin
 
     } catch (error) {
-      console.error('Yandex OAuth callback error:', error)
-
-      // Более подробная информация об ошибке
-      if (error instanceof Error) {
-        console.error('Error message:', error.message)
-        console.error('Error stack:', error.stack)
-      }
-
-      // Показываем пользователю понятное сообщение
-      let userMessage = 'Произошла ошибка при авторизации через Яндекс'
-
-      if (error instanceof Error) {
-        if (error.message.includes('Email not confirmed')) {
-          userMessage = 'Пожалуйста, подтвердите ваш email в письме от Supabase перед входом'
-        } else if (error.message.includes('Invalid login credentials')) {
-          userMessage = 'Неверные учетные данные. Попробуйте войти заново'
-        } else if (error.message.includes('already registered')) {
-          userMessage = 'Этот аккаунт Яндекс уже связан с другим пользователем'
-        }
-      }
-
-      alert(userMessage + '\n\nПодробности: ' + (error as Error).message)
+      console.error('VK OAuth callback error:', error)
+      alert('Ошибка обработки авторизации VK: ' + (error as Error).message)
       window.location.href = window.location.origin
     }
   }
-
 
   private showSubscriptionModal(): void {
     const modal = document.createElement('div')
@@ -1556,24 +1452,25 @@ export class TestApp {
     }
   }
 
-  private async loginWithYandex(): Promise<void> {
+  private async loginWithVK(): Promise<void> {
     try {
       // Генерируем случайное состояние для защиты от CSRF
       const state = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
-      localStorage.setItem('yandex_oauth_state', state)
+      localStorage.setItem('vk_oauth_state', state)
 
-      // Формируем URL для авторизации Yandex
-      const authUrl = new URL(YANDEX_CONFIG.authUrl)
-      authUrl.searchParams.set('client_id', YANDEX_CONFIG.clientId)
-      authUrl.searchParams.set('redirect_uri', YANDEX_CONFIG.redirectUri)
+      // Формируем URL для авторизации VK
+      const authUrl = new URL('https://oauth.vk.com/authorize')
+      authUrl.searchParams.set('client_id', VK_CONFIG.appId)
+      authUrl.searchParams.set('redirect_uri', VK_CONFIG.redirectUri)
       authUrl.searchParams.set('response_type', 'code')
-      authUrl.searchParams.set('scope', YANDEX_CONFIG.scope)
+      authUrl.searchParams.set('scope', VK_CONFIG.scope)
       authUrl.searchParams.set('state', state)
+      authUrl.searchParams.set('v', VK_CONFIG.apiVersion)
 
-      // Перенаправляем пользователя на Yandex для авторизации
+      // Перенаправляем пользователя на VK для авторизации
       window.location.href = authUrl.toString()
     } catch (error) {
-      alert('Ошибка входа через Яндекс: ' + (error as Error).message)
+      alert('Ошибка входа через VK: ' + (error as Error).message)
     }
   }
 
