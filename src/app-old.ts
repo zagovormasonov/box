@@ -1004,7 +1004,7 @@ export class TestApp {
           // Пользователь не найден или пароль неверный, создаем нового
           console.log('Создаем нового пользователя для Yandex авторизации')
 
-          const { data: signUpData, error: signUpError } = await this.supabase.auth.signUp({
+          const { error: signUpError } = await this.supabase.auth.signUp({
             email: email,
             password: password,
             options: {
@@ -1026,7 +1026,7 @@ export class TestApp {
               const uniqueEmail = `yandex_${userData.id}_${Date.now()}@yandex.com`
               const uniquePassword = Math.random().toString(36) + Math.random().toString(36)
 
-              const { data: altSignUpData, error: altSignUpError } = await this.supabase.auth.signUp({
+              const { error: altSignUpError } = await this.supabase.auth.signUp({
                 email: uniqueEmail,
                 password: uniquePassword,
                 options: {
@@ -1053,9 +1053,9 @@ export class TestApp {
             } else {
               throw signUpError
             }
-          } else if (signUpData?.user) {
+          } else if (!signUpError) {
             // Новый пользователь создан успешно
-            console.log('Новый пользователь создан:', signUpData.user.email)
+            console.log('Новый пользователь создан:', email)
 
             // Для новых пользователей в Supabase может потребоваться подтверждение email
             // Пробуем войти с повторными попытками
