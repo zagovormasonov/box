@@ -291,10 +291,10 @@ export class TestApp {
               </div>
             ` : this.state.currentUser?.email ? `
               <div class="user-avatar">
-                <div class="avatar-placeholder">${this.getUserInitials()}</div>
+                <div class="avatar-placeholder">${this.state.currentUser.email.charAt(0).toUpperCase()}</div>
               </div>
             ` : ''}
-            <p>${this.getUserGreeting()}</p>
+            <p>Добро пожаловать!</p>
             <p>Email: ${this.state.currentUser?.email || ''}</p>
             <div class="balance-info">
               <span class="balance-label">Баланс:</span>
@@ -1569,7 +1569,6 @@ export class TestApp {
       authUrl.searchParams.set('response_type', 'code')
       authUrl.searchParams.set('scope', YANDEX_CONFIG.scope)
       authUrl.searchParams.set('state', state)
-      authUrl.searchParams.set('prompt', 'select_account')
 
       // Перенаправляем пользователя на Yandex для авторизации
       window.location.href = authUrl.toString()
@@ -1672,66 +1671,6 @@ export class TestApp {
         warningElement.parentNode.removeChild(warningElement)
       }
     }, 300)
-  }
-
-  private getUserGreeting(): string {
-    if (!this.state.currentUser) {
-      return 'Добро пожаловать!'
-    }
-
-    const metadata = this.state.currentUser.user_metadata
-
-    // Проверяем, есть ли имя пользователя из OAuth провайдеров
-    if (metadata) {
-      const firstName = metadata.first_name
-      const lastName = metadata.last_name
-
-      // Сначала пробуем first_name + last_name
-      if (firstName || lastName) {
-        const fullName = [firstName, lastName].filter(Boolean).join(' ')
-        return `Добро пожаловать, ${fullName}!`
-      }
-    }
-
-    // Если имени нет, используем email
-    const email = this.state.currentUser.email
-    if (email) {
-      const username = email.split('@')[0]
-      return `Добро пожаловать, ${username}!`
-    }
-
-    return 'Добро пожаловать!'
-  }
-
-  private getUserInitials(): string {
-    if (!this.state.currentUser) {
-      return '?'
-    }
-
-    const metadata = this.state.currentUser.user_metadata
-
-    // Проверяем, есть ли имя пользователя из OAuth провайдеров
-    if (metadata) {
-      const firstName = metadata.first_name
-      const lastName = metadata.last_name
-
-      // Сначала пробуем first_name + last_name
-      if (firstName && lastName) {
-        return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase()
-      } else if (firstName) {
-        return firstName.charAt(0).toUpperCase()
-      } else if (lastName) {
-        return lastName.charAt(0).toUpperCase()
-      }
-    }
-
-    // Если имени нет, используем email
-    const email = this.state.currentUser.email
-    if (email) {
-      return email.charAt(0).toUpperCase()
-    }
-
-    return '?'
   }
 
   private updateProgress(): void {
